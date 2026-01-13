@@ -1,0 +1,89 @@
+# Workflow Status Template
+
+# This tracks progress through BMM methodology Analysis, Planning, and Solutioning phases.
+# Implementation phase is tracked separately in sprint-status.yaml
+
+# STATUS DEFINITIONS:
+# ==================
+# Initial Status (before completion):
+#   - required: Must be completed to progress
+#   - optional: Can be completed but not required
+#   - recommended: Strongly suggested but not required
+#   - conditional: Required only if certain conditions met (e.g., if_has_ui)
+#
+# Completion Status:
+#   - {file-path}: File created/found (e.g., "docs/product-brief.md")
+#   - skipped: Optional/conditional workflow that was skipped
+
+generated: "2026-01-09"
+project: "bm-builder"
+project_type: "bm-builder"
+selected_track: "bmad-method"
+field_type: "greenfield"
+workflow_path: "{project-root}/_bmad/bmm/workflows/workflow-status/paths/method-greenfield.yaml"
+workflow_status:
+  # Phase 1: Analysis (Optional - User Selected)
+  - id: "brainstorm-project"
+    status: "optional"
+    phase: 1
+    agent: "analyst"
+    command: "/bmad:bmm:workflows:brainstorming"
+    note: "Included by user choice - Uses core brainstorming workflow"
+  - id: "research"
+    status: "skipped"
+    phase: 1
+    note: "Not selected by user"
+  - id: "product-brief"
+    status: "/Users/donggyu/bm-builder/_bmad-output/planning-artifacts/product-brief-bm-builder-2026-01-09.md"
+    phase: 1
+    agent: "analyst"
+    command: "/bmad:bmm:workflows:create-product-brief"
+    note: "Included by user choice - Recommended for greenfield Method projects - Completed 2026-01-09"
+
+  # Phase 2: Planning (Required)
+  - id: "prd"
+    status: "/Users/donggyu/bm-builder/_bmad-output/planning-artifacts/prd.md"
+    phase: 2
+    agent: "pm"
+    command: "/bmad:bmm:workflows:create-prd"
+    note: "Product Requirements Document with FRs and NFRs - Completed 2026-01-09"
+  - id: "create-ux-design"
+    status: "conditional"
+    phase: 2
+    agent: "ux-designer"
+    command: "/bmad:bmm:workflows:create-ux-design"
+    note: "Determined after PRD - user/agent decides if needed"
+
+  # Phase 3: Solutioning (Required)
+  - id: "create-architecture"
+    status: "/Users/donggyu/bm-builder/_bmad-output/planning-artifacts/architecture.md"
+    phase: 3
+    agent: "architect"
+    command: "/bmad:bmm:workflows:create-architecture"
+    note: "Complete system design for greenfield projects - Completed 2026-01-09"
+  - id: "create-epics-and-stories"
+    status: "/Users/donggyu/bm-builder/_bmad-output/planning-artifacts/epics.md"
+    phase: 3
+    agent: "pm"
+    command: "/bmad:bmm:workflows:create-epics-and-stories"
+    note: "Break down PRD into implementable epics and stories - Completed 2026-01-09: 9 Epics, 52 Stories"
+  - id: "test-design"
+    status: "optional"
+    phase: 3
+    agent: "tea"
+    command: "/bmad:bmm:workflows:test-design"
+    note: "System-level testability review"
+  - id: "implementation-readiness"
+    status: "required"
+    phase: 3
+    agent: "architect"
+    command: "/bmad:bmm:workflows:implementation-readiness"
+    note: "Validates PRD + Architecture + Epics + UX"
+
+  # Phase 4: Implementation (Required)
+  - id: "sprint-planning"
+    status: "required"
+    phase: 4
+    agent: "sm"
+    command: "/bmad:bmm:workflows:sprint-planning"
+    note: "Creates sprint plan - subsequent work tracked there"

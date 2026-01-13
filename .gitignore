@@ -1,0 +1,17 @@
+.claude
+.claude-code
+*/node_modules/
+*/.env
+.DS_Store
+.vscode/
+.idea/
+*.log
+*.tmp
+dist/
+build/
+coverage/
+*.bak
+*.swp
+*.swo
+node_modules/
+.env
