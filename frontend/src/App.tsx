@@ -1,33 +1,24 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './hooks/useAuth';
-import LoginPage from './pages/LoginPage';
-import OnboardingPage from './pages/OnboardingPage';
-import DashboardPage from './pages/DashboardPage';
-import DemoModePage from './pages/DemoModePage';
-import SettingsPage from './pages/SettingsPage';
-import LandingPage from './pages/LandingPage';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { LoginPage } from './pages/LoginPage';
+import { OnboardingPage } from './pages/OnboardingPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { DocumentsPage } from './pages/DocumentsPage';
+import GoogleOAuthCallback from './components/auth/GoogleOAuthCallback';
 
 function App() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/dashboard" />} />
-      <Route path="/onboarding" element={<OnboardingPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="/demo" element={<DemoModePage />} />
-      <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/login" />} />
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/documents" element={<DocumentsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

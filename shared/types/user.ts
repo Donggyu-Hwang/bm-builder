@@ -1,23 +1,35 @@
-// User Types
 export interface User {
   id: string;
   email: string;
+  password_hash?: string;
+  name?: string;
   full_name?: string;
   avatar_url?: string;
-  onboarding_completed: boolean;
+  google_id?: string;
+  onboarding_completed?: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export interface UserProfile extends User {
-  show_tooltips?: boolean;
-  node_ui_tour_completed?: boolean;
+  // Additional profile fields can be added here
 }
 
-export type UserRole = 'admin' | 'user';
-
-export interface AuthUser {
-  id: string;
+export interface CreateUserInput {
   email: string;
+  password_hash?: string;
+  name?: string;
   full_name?: string;
   avatar_url?: string;
+  google_id?: string;
+}
+
+export interface UpdateUserInput {
+  email?: string;
+  password_hash?: string;
+  name?: string;
+  full_name?: string;
+  avatar_url?: string;
+  google_id?: string;
+  onboarding_completed?: boolean;
 }

@@ -1,68 +1,118 @@
-import { useState } from 'react';
-import { useOnboarding } from '../../hooks/useOnboarding';
-import OnboardingStep1 from './OnboardingStep1';
-import OnboardingStep2 from './OnboardingStep2';
-import OnboardingStep3 from './OnboardingStep3';
-import Progress from '../ui/Progress';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { ProgressBar } from './ProgressBar';
+import { OnboardingStep1, OnboardingStep2, OnboardingStep3 } from './OnboardingSteps';
+import {
+  selectOnboarding,
+  loadOnboarding,
+  saveOnboardingStep,
+  completeOnboarding,
+  setCurrentStep,
+} from '../../store/slices/onboardingSlice';
 
-export default function OnboardingFlow() {
-  const { currentStep, saveResponse, getResponseByStep } = useOnboarding();
-  const [isSaving, setIsSaving] = useState(false);
+export const OnboardingFlow = () => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { currentStep, responses, loading } = useAppSelector(selectOnboarding);
 
-  const handleNext = async (response: string) => {
-    setIsSaving(true);
-    await saveResponse(currentStep, response);
-    setIsSaving(false);
+  const [localInput, setLocalInput] = useState(responses);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadOnboardingData = async () => {
+      await dispatch(loadOnboarding());
+      setIsLoading(false);
+    };
+    loadOnboardingData();
+  }, [dispatch]);
+
+  useEffect(() => {
+    setLocalInput(responses);
+  }, [responses]);
+
+  const handleInputChange = (input: Partial<typeof localInput>) => {
+    setLocalInput((prev: typeof localInput) => ({ ...prev, ...input }));
   };
 
-  const getProgress = () => {
-    switch (currentStep) {
-      case 1:
-        return 33;
-      case 2:
-        return 66;
-      case 3:
-        return 100;
-      default:
-        return 0;
+  const handleNext = async () => {
+    if (currentStep === 1 && (!localInput.vision || localInput.vision.trim().length < 10)) {
+      alert('비전을 최소 10자 이상 입력해주세요');
+      return;
+    }
+
+    if (currentStep === 2 && (!localInput.target_customer || localInput.target_customer.trim().length < 10)) {
+      alert('타겟 고객을 최소 10자 이상 입력해주세요');
+      return;
+    }
+
+    if (currentStep === 3 && !localInput.current_stage) {
+      alert('현재 단계를 선택해주세요');
+      return;
+    }
+
+    void dispatch(saveOnboardingStep({ step: currentStep, input: localInput }));
+
+    if (currentStep < 3) {
+      dispatch(setCurrentStep((currentStep + 1) as 1 | 2 | 3));
+    } else {
+      await dispatch(completeOnboarding());
+      alert('온보딩을 완료했습니다! 🎉');
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 3000);
     }
   };
 
-  return (
-    <div className="container mx-auto min-h-screen px-4 py-8">
-      <div className="mx-auto max-w-2xl">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-medium">진행률</span>
-            <span className="text-sm text-muted-foreground">{getProgress()}%</span>
-          </div>
-          <Progress value={getProgress()} max={100} />
-        </div>
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return <OnboardingStep1 vision={localInput.vision || ''} onChange={handleInputChange} />;
+      case 2:
+        return <OnboardingStep2 targetCustomer={localInput.target_customer || ''} onChange={handleInputChange} />;
+      case 3:
+        return <OnboardingStep3 currentStage={localInput.current_stage} onChange={handleInputChange} />;
+      default:
+        return null;
+    }
+  };
 
-        {/* Steps */}
-        {currentStep === 1 && (
-          <OnboardingStep1
-            initialResponse={getResponseByStep(1)}
-            onNext={handleNext}
-            loading={isSaving}
-          />
-        )}
-        {currentStep === 2 && (
-          <OnboardingStep2
-            initialResponse={getResponseByStep(2)}
-            onNext={handleNext}
-            loading={isSaving}
-          />
-        )}
-        {currentStep === 3 && (
-          <OnboardingStep3
-            initialResponse={getResponseByStep(3)}
-            onNext={handleNext}
-            loading={isSaving}
-          />
-        )}
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">온보딩 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">온보딩</span>
+              <span className="text-sm text-gray-500">{currentStep}/3</span>
+            </div>
+            <ProgressBar currentStep={currentStep} />
+          </div>
+
+          <div className="mb-8">{renderStep()}</div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleNext}
+              disabled={loading}
+              className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {loading ? '저장 중...' : currentStep === 3 ? '완료하기' : '다음'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};

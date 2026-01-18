@@ -1,52 +1,99 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import type { AuthState, Session, User } from '../../types/auth';
-import * as authApi from '../../api/authApi';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import type { User } from '../../../../shared/types/user.types';
+
+// Re-export User type for convenience
+export type { User };
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
 
 const initialState: AuthState = {
   user: null,
-  session: null,
   isAuthenticated: false,
-  loading: true,
+  isLoading: true,
   error: null,
 };
 
 // Async thunks
-export const signIn = createAsyncThunk(
-  'auth/signIn',
-  async (provider: 'google' | 'naver', { rejectWithValue }) => {
-    try {
-      const response = await authApi.signInWithOAuth(provider);
-      return response;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : '로그인에 실패했습니다.');
-    }
-  }
-);
-
-export const getSession = createAsyncThunk(
-  'auth/getSession',
+export const checkAuth = createAsyncThunk(
+  'auth/checkAuth',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await authApi.getSession();
-      return response;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : '세션을 가져오는데 실패했습니다.');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Authentication check failed');
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error?.message || 'Authentication failed');
+      }
+
+      return data.data.user as User;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to check authentication');
     }
   }
 );
 
-export const signOut = createAsyncThunk(
-  'auth/signOut',
+export const logoutUser = createAsyncThunk(
+  'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      await authApi.signOut();
-      return;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : '로그아웃에 실패했습니다.');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+
+      return true;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to logout');
     }
   }
 );
 
+export const refreshToken = createAsyncThunk(
+  'auth/refreshToken',
+  async (_, { rejectWithValue }) => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error?.message || 'Token refresh failed');
+      }
+
+      return data.data.user as User;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to refresh token');
+    }
+  }
+);
+
+// Auth slice
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -54,70 +101,77 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    setUser: (state, action) => {
+    setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
-      state.isAuthenticated = !!action.payload;
+      state.isAuthenticated = true;
+      state.isLoading = false;
+    },
+    clearAuth: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.isLoading = false;
     },
   },
   extraReducers: (builder) => {
-    // signIn
     builder
-      .addCase(signIn.pending, (state) => {
-        state.loading = true;
+      // checkAuth
+      .addCase(checkAuth.pending, (state) => {
+        state.isLoading = true;
         state.error = null;
       })
-      .addCase(signIn.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user;
-        state.session = action.payload.session;
+      .addCase(checkAuth.fulfilled, (state, action) => {
+        state.user = action.payload;
         state.isAuthenticated = true;
+        state.isLoading = false;
+        state.error = null;
       })
-      .addCase(signIn.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      });
-
-    // getSession
-    builder
-      .addCase(getSession.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(getSession.fulfilled, (state, action) => {
-        state.loading = false;
-        if (action.payload) {
-          state.user = action.payload.user;
-          state.session = action.payload.session;
-          state.isAuthenticated = true;
-        }
-      })
-      .addCase(getSession.rejected, (state) => {
-        state.loading = false;
-        state.isAuthenticated = false;
-      });
-
-    // signOut
-    builder
-      .addCase(signOut.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(signOut.fulfilled, (state) => {
-        state.loading = false;
+      .addCase(checkAuth.rejected, (state, action) => {
         state.user = null;
-        state.session = null;
         state.isAuthenticated = false;
+        state.isLoading = false;
+        state.error = action.payload as string;
       })
-      .addCase(signOut.rejected, (state, action) => {
-        state.loading = false;
+      // logoutUser
+      .addCase(logoutUser.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // refreshToken
+      .addCase(refreshToken.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(refreshToken.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(refreshToken.rejected, (state, action) => {
+        // Token refresh failed - clear auth state
+        state.user = null;
+        state.isAuthenticated = false;
+        state.isLoading = false;
         state.error = action.payload as string;
       });
   },
 });
 
-export const { clearError, setUser } = authSlice.actions;
-export default authSlice.reducer;
+export const { clearError, setUser, clearAuth } = authSlice.actions;
 
 // Selectors
-export const selectAuthUser = (state: { auth: AuthState }) => state.auth.user;
+export const selectUser = (state: { auth: AuthState }) => state.auth.user;
 export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth.isAuthenticated;
-export const selectAuthLoading = (state: { auth: AuthState }) => state.auth.loading;
+export const selectIsLoading = (state: { auth: AuthState }) => state.auth.isLoading;
 export const selectAuthError = (state: { auth: AuthState }) => state.auth.error;
+
+export default authSlice.reducer;

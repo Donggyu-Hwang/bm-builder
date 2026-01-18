@@ -1,59 +1,56 @@
 import { Request, Response, NextFunction } from 'express';
-import { supabaseAdmin } from '../utils/supabaseAdmin';
+import { verifyToken } from '../utils/auth';
 
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-  };
+/**
+ * Authenticated user interface
+ */
+export interface AuthUser {
+  id: string;
+  email: string;
 }
 
-export async function requireAuth(
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const authHeader = req.headers.authorization;
+/**
+ * Authenticated Request interface with user property
+ */
+export interface AuthRequest extends Request {
+  user?: AuthUser;
+}
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Unauthorized: Missing or invalid token',
-          code: 'UNAUTHORIZED',
-        },
-      });
-    }
+/**
+ * Middleware to verify JWT token from cookies
+ */
+export function requireAuth(req: AuthRequest, res: Response, next: NextFunction): void {
+  const accessToken = req.cookies.access_token;
 
-    const token = authHeader.split(' ')[1];
-
-    // Verify token with Supabase
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-
-    if (error || !user) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Unauthorized: Invalid token',
-          code: 'INVALID_TOKEN',
-        },
-      });
-    }
-
-    req.user = {
-      id: user.id,
-      email: user.email || '',
-    };
-
-    next();
-  } catch (error) {
-    return res.status(500).json({
+  if (!accessToken) {
+    res.status(401).json({
       success: false,
       error: {
-        message: 'Internal Server Error',
-        code: 'INTERNAL_ERROR',
-      },
+        code: 'NO_TOKEN',
+        message: 'Authentication required'
+      }
     });
+    return;
   }
+
+  const payload = verifyToken(accessToken);
+
+  if (!payload) {
+    res.status(401).json({
+      success: false,
+      error: {
+        code: 'INVALID_TOKEN',
+        message: 'Invalid or expired token'
+      }
+    });
+    return;
+  }
+
+  // Attach user info to request
+  req.user = {
+    id: payload.userId,
+    email: payload.email
+  };
+
+  next();
 }

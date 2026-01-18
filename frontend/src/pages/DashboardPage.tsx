@@ -1,100 +1,94 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { useOnboarding } from '../hooks/useOnboarding';
-import { usePriorities } from '../hooks/usePriorities';
-import PriorityCards from '../components/dashboard/PriorityCards';
-import WelcomeModal from '../components/dashboard/WelcomeModal';
-import AIgeneratingSkeleton from '../components/dashboard/AIgeneratingSkeleton';
-import { useAppSelector } from '../store/hooks';
+import { useAuth } from '@/hooks/useAuth';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { loadPriorities, generatePriorities, selectPriorities } from '@/store/slices/prioritiesSlice';
+import { selectOnboarding } from '@/store/slices/onboardingSlice';
+import { selectGoogleDrive } from '@/store/slices/googleDriveSlice';
+import { WelcomeModal } from '@/components/welcome/WelcomeModal';
+import { PrioritiesList } from '@/components/priorities/PrioritiesList';
+import { ScanProgress } from '@/components/fileScan/ScanProgress';
 
-export default function DashboardPage() {
+export const DashboardPage = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
-  const { completed, loadResponses, responses } = useOnboarding();
-  const { items, loading, generating, generate, load } = usePriorities();
-
-  const showWelcome = useAppSelector((state) => {
-    // Check if user has seen welcome modal (you'd store this in user_preferences)
-    return false; // For now, always show or use a flag
-  });
+  const { user, isLoading } = useAuth();
+  const dispatch = useAppDispatch();
+  const { items, loading: prioritiesLoading } = useAppSelector(selectPriorities);
+  const { responses } = useAppSelector(selectOnboarding);
+  const { googleDriveConnected } = useAppSelector(selectGoogleDrive);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login');
-      return;
-    }
-
-    if (user && !user.onboarding_completed) {
-      navigate('/onboarding');
-      return;
-    }
-
-    // Load priorities
-    if (user?.onboarding_completed) {
-      load();
-
-      // Generate priorities if empty
-      if (items.length === 0 && !generating) {
-        const onboardingData = responses.map(r => r.response).join('\n');
-        generate(onboardingData);
+    if (!isLoading) {
+      if (!user) {
+        navigate('/login', { replace: true });
+      } else if (!user.onboarding_completed) {
+        navigate('/onboarding', { replace: true });
       }
     }
-  }, [user, authLoading, navigate, items.length, generating, generate, load, responses]);
+  }, [user, isLoading, navigate]);
 
-  if (authLoading || loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    // Load existing priorities when user is authenticated
+    if (user && user.onboarding_completed) {
+      dispatch(loadPriorities());
+    }
+  }, [dispatch, user]);
 
-  if (!user) {
-    return null;
+  useEffect(() => {
+    // Generate AI priorities if:
+    // 1. User has completed onboarding
+    // 2. No priorities exist
+    // 3. Not currently loading
+    // 4. Onboarding responses are available
+    if (
+      user &&
+      user.onboarding_completed &&
+      items.length === 0 &&
+      !prioritiesLoading &&
+      responses.vision &&
+      responses.target_customer &&
+      responses.current_stage
+    ) {
+      dispatch(
+        generatePriorities({
+          vision: responses.vision,
+          target_customer: responses.target_customer,
+          current_stage: responses.current_stage,
+        })
+      );
+    }
+  }, [dispatch, user, items.length, prioritiesLoading, responses]);
+
+  if (isLoading || !user || !user.onboarding_completed) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">로딩 중...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary" />
-            <span className="text-xl font-bold">BM Builder</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {user.email}
-            </span>
-            <button
-              onClick={() => navigate('/settings')}
-              className="text-sm font-medium hover:underline"
-            >
-              설정
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">대시보드</h1>
-          <p className="text-muted-foreground">
-            {user.full_name || '사용자'}님, 오늘의 우선순위를 확인하세요.
-          </p>
-        </div>
-
-        {generating ? (
-          <AIgeneratingSkeleton />
-        ) : (
-          <PriorityCards />
-        )}
-      </main>
-
+    <>
       {/* Welcome Modal */}
-      {showWelcome && <WelcomeModal />}
-    </div>
+      <WelcomeModal />
+
+      {/* Dashboard Content */}
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="px-4 py-6 sm:px-0">
+            <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
+            <p className="mt-2 text-gray-600">환영합니다, {user.full_name || user.email}님!</p>
+
+            {/* File Scan Progress Section */}
+            {googleDriveConnected && (
+              <div className="mt-8">
+                <ScanProgress />
+              </div>
+            )}
+
+            {/* Priorities Section */}
+            <div className="mt-8">
+              <PrioritiesList />
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
-}
+};

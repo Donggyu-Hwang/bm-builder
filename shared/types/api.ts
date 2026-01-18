@@ -1,23 +1,29 @@
-// API Response Wrapper (Discriminated Union Pattern)
+export interface ApiError {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+}
+
 export type ApiResponse<T, E = ApiError> =
   | { success: true; data: T }
   | { success: false; error: E };
 
-export interface ApiError {
-  message: string;
-  code?: string;
-  details?: unknown;
-}
-
 export interface PaginationParams {
-  page: number;
-  limit: number;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }

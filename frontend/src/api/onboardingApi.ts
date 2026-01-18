@@ -1,68 +1,114 @@
-import { supabase } from './supabase';
-import type { OnboardingResponse, OnboardingStep } from '../types/onboarding';
+import type {
+  OnboardingResponse,
+  OnboardingInput,
+  OnboardingApiResponse,
+  OnboardingSaveResponse,
+  OnboardingCompleteResponse,
+  OnboardingResetResponse,
+} from '../../../shared/types/onboarding.types';
 
-export async function saveResponse(
-  step: OnboardingStep,
-  response: string
-): Promise<OnboardingResponse> {
-  const { data: { user } } = await supabase.auth.getUser();
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
+export const onboardingApi = {
+  /**
+   * Get current onboarding progress
+   */
+  async getOnboarding(): Promise<OnboardingApiResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/onboarding`, {
+        credentials: 'include'
+      });
 
-  const { data, error } = await supabase
-    .from('onboarding_responses')
-    .upsert({
-      user_id: user.id,
-      step_number: step,
-      response,
-    }, {
-      onConflict: 'user_id,step_number',
-    })
-    .select()
-    .single();
+      const result = await response.json() as { success: boolean; data?: { onboarding: OnboardingResponse | null }; error?: { code: string; message: string } };
 
-  if (error) {
-    throw new Error(error.message);
-  }
+      if (!response.ok || !result.success) {
+        return { success: false, error: { code: result.error?.code || 'FETCH_ERROR', message: result.error?.message || 'Failed to fetch onboarding' } };
+      }
 
-  return data as OnboardingResponse;
-}
+      if (!result.data?.onboarding) {
+        return { success: false, error: { code: 'NOT_FOUND', message: 'No onboarding data found' } };
+      }
 
-export async function getResponses(): Promise<OnboardingResponse[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+      return { success: true, data: result.data.onboarding };
+    } catch (error) {
+      return { success: false, error: { code: 'NETWORK_ERROR', message: error instanceof Error ? error.message : 'Network error' } };
+    }
+  },
 
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
+  /**
+   * Save onboarding step (upsert)
+   */
+  async saveStep(
+    step: 1 | 2 | 3,
+    input: OnboardingInput
+  ): Promise<OnboardingSaveResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/onboarding/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ step, ...input })
+      });
 
-  const { data, error } = await supabase
-    .from('onboarding_responses')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('step_number', { ascending: true });
+      const result = await response.json() as { success: boolean; data?: { onboarding: OnboardingResponse }; error?: { code: string; message: string } };
 
-  if (error) {
-    throw new Error(error.message);
-  }
+      if (!response.ok || !result.success) {
+        return { success: false, error: { code: result.error?.code || 'FETCH_ERROR', message: result.error?.message || 'Failed to save onboarding' } };
+      }
 
-  return (data as OnboardingResponse[]) || [];
-}
+      if (!result.data?.onboarding) {
+        return { success: false, error: { code: 'SERVER_ERROR', message: 'Server returned no data' } };
+      }
 
-export async function completeOnboarding(): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+      return { success: true, data: result.data.onboarding };
+    } catch (error) {
+      return { success: false, error: { code: 'NETWORK_ERROR', message: error instanceof Error ? error.message : 'Network error' } };
+    }
+  },
 
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
+  /**
+   * Complete onboarding
+   */
+  async completeOnboarding(): Promise<OnboardingCompleteResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/onboarding/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ onboarding_completed: true })
-    .eq('id', user.id);
+      const result = await response.json() as { success: boolean; data?: { message: string }; error?: { code: string; message: string } };
 
-  if (error) {
-    throw new Error(error.message);
-  }
-}
+      if (!response.ok || !result.success) {
+        return { success: false, error: { code: result.error?.code || 'FETCH_ERROR', message: result.error?.message || 'Failed to complete onboarding' } };
+      }
+
+      return { success: true, data: { message: result.data?.message || 'Onboarding completed successfully' } };
+    } catch (error) {
+      return { success: false, error: { code: 'NETWORK_ERROR', message: error instanceof Error ? error.message : 'Network error' } };
+    }
+  },
+
+  /**
+   * Reset onboarding (for "restart onboarding" feature)
+   */
+  async resetOnboarding(): Promise<OnboardingResetResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/onboarding/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      const result = await response.json() as { success: boolean; data?: { message: string }; error?: { code: string; message: string } };
+
+      if (!response.ok || !result.success) {
+        return { success: false, error: { code: result.error?.code || 'FETCH_ERROR', message: result.error?.message || 'Failed to reset onboarding' } };
+      }
+
+      return { success: true, data: { message: result.data?.message || 'Onboarding reset successfully' } };
+    } catch (error) {
+      return { success: false, error: { code: 'NETWORK_ERROR', message: error instanceof Error ? error.message : 'Network error' } };
+    }
+  },
+};
