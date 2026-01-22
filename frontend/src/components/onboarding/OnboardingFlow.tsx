@@ -79,34 +79,34 @@ export const OnboardingFlow = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">온보딩 정보를 불러오는 중...</p>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">온보딩 정보를 불러오는 중...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 lg:p-8">
+          <div className="mb-4 sm:mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">온보딩</span>
-              <span className="text-sm text-gray-500">{currentStep}/3</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">온보딩</span>
+              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{currentStep}/3</span>
             </div>
             <ProgressBar currentStep={currentStep} />
           </div>
 
-          <div className="mb-8">{renderStep()}</div>
+          <div className="mb-6 sm:mb-8">{renderStep()}</div>
 
           <div className="flex justify-end">
             <button
               onClick={handleNext}
               disabled={loading}
-              className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? '저장 중...' : currentStep === 3 ? '완료하기' : '다음'}
             </button>

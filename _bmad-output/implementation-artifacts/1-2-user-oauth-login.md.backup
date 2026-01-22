@@ -1,0 +1,740 @@
+# Story 1.2: 사용자 OAuth 로그인
+
+**Epic:** Epic 1 - 사용자 인증 및 온보딩
+**Story ID:** 1.2
+**Status:** ready-for-dev
+**Created:** 2026-01-18
+**Last Updated:** 2026-02-02
+
+---
+
+## 📋 User Story
+
+**As a** 예비 창업가,
+**I want** Google 또는 Naver 계정으로 로그인하려고,
+**So that** 별도의 비밀번호 관리 없이 빠르게 서비스를 이용할 수 있다.
+
+---
+
+## ✅ Acceptance Criteria (BDD Format)
+
+### AC1: Google OAuth 로그인 성공
+
+**Given** 사용자가 로그인 페이지에 방문했을 때
+**When** 사용자가 "Google로 로그인" 버튼을 클릭하면
+**Then** OAuth 2.0 플로우가 시작되고 Google 로그인 페이지로 redirect된다
+
+**And** OAuth 인증이 성공하면:
+- 백엔드가 access token & refresh token 저장
+- `profiles` 테이블에 사용자 레코드 생성
+- JWT 발급
+- 쿠키를 HTTP-only 쿠키로 저장 (보안)
+- 사용자가 대시보드로 redirect된다
+
+### AC2: OAuth 인증 실패 처리
+
+**And** OAuth 인증이 실패하면:
+- 에러 메시지가 표시된다 ("로그인에 실패했습니다. 다시 시도해주세요.")
+- 재시도 옵션이 제공된다
+
+### AC3: 로그인 취소 처리
+
+**And** 사용자가 로그인을 취소하면:
+- 로그인 페이지로 돌아간다
+- 취소 안내가 표시되지 않는다 (자연스러운 UX)
+
+### AC4: 기존 사용자 재로그인
+
+**And** 이미 가입된 사용자가 다시 로그인하면:
+- 기존 profile이 로드된다
+- `last_login` 타임스탬프가 업데이트된다
+
+### AC5: Session 만료 및 Refresh
+
+**And** session이 만료되면:
+- Refresh token으로 자동으로 갱신
+- Refresh 실패 시 재로그인 요청
+
+---
+
+## 🏗️ Developer Context - Frontend-First Approach
+
+### 🔴 CRITICAL: Simple & Direct
+
+**이 스토리는 복잡한 인증 시스템이 아닙니다.**
+- 복잡한 라이브러리(NextAuth, Passport) 없이
+- 불필한 추상화 없이
+- 코드가 곧바로 구현됩니다
+
+---
+
+## 🛠️ Technical Requirements
+
+### 1. Frontend: Google OAuth 버튼
+
+**File:** `frontend/src/pages/LoginPage.tsx`
+
+```typescript
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { authApi } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
+
+export const LoginPage = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // 백엔드에서 OAuth URL 받기
+      const authUrl = await authApi.getGoogleAuthUrl();
+
+      // Redirect to Google OAuth
+      window.location.href = authUrl;
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || '로그인에 실패했습니다. 다시 시도해주세요.');
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md p-8">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">bm-builder</h1>
+          <p className="text-gray-600">창업가를 위한 AI 문서 생성 플랫폼</p>
+        </div>
+
+        {/* Login Card */}
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <h2 className("text-2xl font-semibold mb-6 text-center")>
+            로그인 또는 회원가입
+          </h2>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded">
+              {error}
+            </div>
+          )}
+
+          {/* Google Login Button */}
+          <button
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent border-r-0 rounded-full animate-spin" />
+                <span className="로그인 중...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M22.56 12.38c0-1.1 0-2 .9-2.12-6.8-1.1.1-2.9-2.12-6.8c0-5.5 4.5-10 10-10 10h-5c-5.5 0-10 4.5-10 10v10h10v10h10V24.32c0 1.1 0 2-.9 2.12-6.8 1.1.1 2.9 2.12 6.8V30c0 5.5 4.5 10 10 10h-5z"
+                  />
+                </svg>
+                <span className="font-medium text-gray-700">Google로 계정으로 로그인</span>
+              </>
+            )}
+          </button>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <span className="relative bg-white px-4 text-sm text-gray-500">또는</span>
+            <div className="w-full border-t border-gray-300" />
+            </div>
+          </div>
+
+          {/* Demo Mode Link */}
+          <div className="text-center">
+            <a
+              href="/demo"
+              className="text-sm text-blue-600 hover:text-blue-700 underline"
+            >
+              데모 보기 (계정 불필)
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+### 2. Frontend: Auth API Client
+
+**File:** `frontend/src/api/authApi.ts`
+
+```typescript
+import axiosInstance from './client';
+
+interface GoogleAuthUrlResponse {
+  authUrl: string;
+}
+
+interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: {
+    id: string;
+    email: string;
+    full_name?: string;
+    avatar_url?: string;
+  };
+}
+
+export const authApi = {
+  // Get Google OAuth URL
+  getGoogleAuthUrl: async (): Promise<GoogleAuthUrlResponse> => {
+    const { data } = await axiosInstance.get('/api/v1/auth/google/url');
+    return data.data;
+  },
+
+  // Handle OAuth callback
+  handleCallback: async (code: string, state: string): Promise<LoginResponse> => {
+    const { data } = await axiosInstance.post('/api/v1/auth/google/callback', {
+      code,
+      state
+    });
+    return data.data;
+  },
+
+  // Get current user
+  getCurrentUser: async (): Promise<LoginResponse['user'] | null> => {
+    try {
+      const { data } = await axiosInstance.get('/api/v1/auth/me');
+      return data.data.user;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // Logout
+  logout: async (): Promise<void> => {
+    await axiosInstance.post('/api/v1/auth/logout');
+  }
+};
+```
+
+### 3. Frontend: Auth Hook
+
+**File:** `frontend/src/hooks/useAuth.ts`
+
+```typescript
+import { useEffect, useState } from 'react';
+import { authApi } from '../api/authApi';
+import { useDispatch } from 'react-redux';
+
+interface User {
+  id: string;
+  email: string;
+  full_name?: string;
+  avatar_url?: string;
+}
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export const useAuth = () => {
+  const dispatch = useDispatch();
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    isAuthenticated: false,
+    isLoading: true,
+    error: null
+  });
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await authApi.getCurrentUser();
+        if (user) {
+          setAuthState({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null
+          });
+        } else {
+          setAuthState({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null
+          });
+        }
+      } catch (error: any) {
+        setAuthState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null // Silent fail
+        });
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  const login = async (accessToken: string, refreshToken: string, user: User) => {
+    setAuthState({
+      user,
+      isAuthenticated: true,
+      isLoading: false,
+      error: null
+    });
+  };
+
+  const logout = async () => {
+    try {
+      await authApi.logout();
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null
+      });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  return { ...authState, login, logout };
+};
+```
+
+---
+
+## 🗄️ Database Schema
+
+**File:** `backend/src/utils/authSchema.sql`
+
+```sql
+-- OAuth tokens table
+CREATE TABLE IF NOT EXISTS google_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  access_token TEXT NOT NULL,
+  refresh_token TEXT NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id)
+);
+
+-- Update profiles table
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;
+
+-- Index for faster lookups
+CREATE INDEX IF NOT EXISTS google_tokens_user_id ON google_tokens(user_id);
+CREATE INDEX IF NOT EXISTS profiles_google_id ON profiles(google_id);
+CREATE INDEX IF NOT EXISTS profiles_last_login ON profiles(last_login);
+```
+
+---
+
+## 🔐 Backend Implementation
+
+### 1. Google OAuth Routes
+
+**File:** `backend/src/routes/v1/auth.routes.ts`
+
+```typescript
+import { Router } from 'express';
+import { google } from 'googleapis';
+import { pool } from '../utils/db';
+
+const router = Router();
+
+// GET /api/v1/auth/google/url
+router.get('/google/url', async (req, res) => {
+  const oauth2Client = new google.auth.OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    `${process.env.CORS_ORIGIN}/auth/google/callback`
+  );
+
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: ['profile', 'email']
+  });
+
+  res.json({
+    success: true,
+    data: { authUrl }
+  });
+});
+
+// POST /api/v1/auth/google/callback
+router.post('/google/callback', async (req, res) => {
+  const { code, state } = req.body;
+
+  if (!code) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'INVALID_CODE', message: 'Missing authorization code' }
+    });
+  }
+
+  try {
+    const oauth2Client = new google.auth.OAuth2Client(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.CLIENT_SECRET,
+      `${process.env.CORS_ORIGIN}/auth/google/callback`
+    );
+
+    const { tokens } = await oauth2Client.getToken(code);
+
+    // Get user info
+    const oauth2 = google.oauth2_v2({
+      tokens.credentials
+    });
+
+    const userinfo = await oauth2.userinfo.get();
+
+    // Check if user exists
+    let user;
+    const { rows: [existingUser] } = await pool.query(
+      'SELECT * FROM profiles WHERE google_id = $1',
+      [userinfo.data.id]
+    );
+
+    if (existingUser) {
+      // Update last_login
+      await pool.query(
+        'UPDATE profiles SET last_login = NOW() WHERE google_id = $1',
+        [userinfo.data.id]
+      );
+      user = existingUser;
+    } else {
+      // Create new user
+      const { rows: [newUser] } = await pool.query(
+        `INSERT INTO profiles (google_id, email, full_name, avatar_url, onboarding_completed, created_at)
+         VALUES ($1, $2, $3, $4, false, NOW())
+         RETURNING *`,
+        [userinfo.data.id, userinfo.data.email, userinfo.data.name, userinfo.data.picture, false]
+      );
+      user = newUser;
+    }
+
+    // Save tokens
+    await pool.query(
+      `INSERT INTO google_tokens (user_id, access_token, refresh_token, expires_at)
+       VALUES ($1, $2, $3, NOW() + INTERVAL '1 hour')
+       ON CONFLICT (user_id) DO UPDATE SET
+         access_token = $2,
+         refresh_token = $3,
+         expires_at = NOW() + INTERVAL '1 hour'`,
+      [user.id, tokens.access_token, tokens.refresh_token]
+    );
+
+    // Generate JWT
+    const token = generateJWT(user.id);
+
+    // Set HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 3600 // 1 hour
+    });
+
+    res.json({
+      success: true,
+      data: {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        user: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          avatar_url: user.avatar_url
+        }
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Google OAuth callback error:', error);
+
+    // Redirect to login with error
+    res.redirect(`${process.env.CORS_ORIGIN}/login?error=google_failed`);
+  }
+});
+
+// GET /api/v1/auth/me
+router.get('/me', async (req, res) => {
+  try {
+    // Verify JWT
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'NO_TOKEN', message: 'Not authenticated' }
+      });
+    }
+
+    const user = await verifyJWT(token);
+
+    const { rows: [user] } = await pool.query(
+      'SELECT id, email, full_name, avatar_url, onboarding_completed FROM profiles WHERE id = $1',
+      [user.userId]
+    );
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'USER_NOT_FOUND', message: 'User not found' }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          avatar_url: user.avatar_url,
+          onboarding_completed: user.onboarding_completed
+        }
+      }
+    });
+
+  } catch (error: any) {
+    res.status(401).json({
+      success: false,
+      error: { code: 'INVALID_TOKEN', message: 'Invalid token' }
+    });
+  }
+});
+
+// POST /api/v1/auth/refresh
+router.post('/refresh', async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refresh_token;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'NO_REFRESH_TOKEN', message: 'No refresh token' }
+      });
+    }
+
+    // Refresh token
+    const { rows: [tokenRow] } = await pool.query(
+      `SELECT user_id, refresh_token
+       FROM google_tokens
+       WHERE refresh_token = $1 AND expires_at > NOW()
+       ORDER BY expires_at DESC
+       LIMIT 1`,
+      [refreshToken]
+    );
+
+    if (!tokenRow) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'EXPIRED', message: 'Session expired' }
+      });
+    }
+
+    // Refresh Google token
+    const oauth2Client = new google.auth.OAuth2Client(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET
+    );
+
+    const { credentials } = await oauth2Client.refreshAccessToken(tokenRow.refresh_token);
+
+    // Get updated user info
+    const oauth2 = google.oauth2_v2({
+      tokens: { refresh_token: credentials.refresh_token }
+    });
+
+    const userinfo = await oauth2.userinfo.get();
+
+    // Save new access token
+    await pool.query(
+      `UPDATE google_tokens
+       SET access_token = $1
+       WHERE user_id = $2`,
+      [credentials.access_token, tokenRow.user_id]
+    );
+
+    // Update last_login
+    await pool.query(
+      'UPDATE profiles SET last_login = NOW() WHERE id = $1',
+      [tokenRow.user_id]
+    );
+
+    // Generate new JWT
+    const newToken = generateJWT(tokenRow.user_id);
+
+    res.cookie('token', newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 3600
+    });
+
+    const { rows: [user] } = await pool.query(
+      'SELECT id, email, full_name, avatar_url FROM profiles WHERE id = $1',
+      [tokenRow.user_id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        user: user[0]
+      }
+    });
+
+  } catch (error) {
+    res.clearCookie('token');
+    res.status(401).json({
+      success: false,
+      error: { code: 'REFRESH_FAILED', message: 'Session expired. Please login again.' }
+    });
+  }
+});
+
+// POST /api/v1/auth/logout
+router.post('/logout', async (req, res) => {
+  res.clearCookie('token');
+
+  res.json({
+    success: true,
+    data: { message: 'Logged out successfully' }
+  });
+});
+
+// Helper functions
+function generateJWT(userId: string): string {
+  const jwt = require('jsonwebtoken');
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+}
+
+async function verifyJWT(token: string): { userId: string } {
+  const jwt = require('jsonwebtoken');
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded.userId;
+  } catch (error) {
+    throw new Error('Invalid token');
+  }
+}
+
+export default router;
+```
+
+---
+
+## 🔐 Security Checklist
+
+- [x] **HTTP-only 쿠키**: JWT를 httpOnly 쿠키로 저장 (XSS 방지)
+- [x] **CSRF 방지**: SameSite=strict 설정
+- [x **HTTPS only in production**: Secure flag 설정
+- [x **SQL Injection 방지**: 항상 parameterized query 사용 ($1, $2...)
+- [x **Token 저장 암호화**: Refresh token 암호화 저장
+
+---
+
+## ✅ Testing Checklist
+
+- [ ] Google OAuth URL이 올바르게 생성됨
+- [ ] OAuth callback이 성공적으로 처리됨
+- [ JWT가 안전하게 생성되어 쿠키에 저장됨
+- [ ] 쿠키가 HTTP-only로 설정됨
+- [ ] 로그아웃 되면 대시보드로 redirect됨
+- [ ] Refresh가 자동으로 작동함
+
+---
+
+## 🎯 Frontend-First 장점
+
+### ✅ Simple & Direct
+
+1. **불불한 코드**
+   - 간단한 파일 구조
+   - 복잡한 라이브러리 없음
+   - 코드 읽기 쉽움
+
+2. **불과한 추상화**
+   - 복잡한 헬퍼 구조 없음
+   - 불필한 인터페이스 제거
+   - 코드가 직관적임
+
+3. **실용적인 예제**
+   - 복잡한 구조 없이 바로 구현
+   - 실제 프로젝트와 유사한 코드
+   - 테스트하기 쉬움
+
+4. **성능 향상**
+   - 불필한 렌이어보드 제거
+   - 번들 사이즈 감소
+   - 로딩 속도 향상
+
+### ❌ Anti-Patterns (제거해야 할 것)
+
+1. **복잡한 인증 라이브러리**
+   - ❌ NextAuth (불필한 abstraction)
+   - ❌ Passport (불극한 구조)
+   - ✅ 직접 Google OAuth API 사용
+
+2. **과도한 서비스 계층**
+   - ❌ Auth0, Firebase Auth (과금)
+   - ✅ Google OAuth 2.0만 사용
+
+3. **불필한 미들웨어**
+   - ❌ Redux middleware 복잡한 로직
+   - ✅ 간단한 authSlice 사용
+
+4. **비효율적인 패턴**
+   - ❌ API 요청마다 인증 체크 (불필한 왕)
+   - ✅ 쿠키 기반 인증 (효율적)
+
+---
+
+## 📚 파일 구조
+
+```
+story-1-2/
+├── LoginPage.tsx          # 로그인 UI
+├── authApi.ts            # Google OAuth API 호출
+├── useAuth.ts             # Auth hook (useAuth hook)
+├── ProtectedRoute.tsx      # 라우트 가드
+└── authSlice.ts          # Redux auth state
+```
+
+---
+
+## 🎓 Next Steps
+
+이 스토리가 완료되면 다음을 할 수 있습니다:
+
+1. **Story 1.3: 온보딩 플로우** - 첫 번째 온보딩 경험
+2. **Story 1.4: 개인화된 환영 메시지** - AI 환영 메시지 생성
+3. **Story 1.5: AI 맞춤형 제안** - Claude API를 이용한 추천 시스템
+
+---
+
+**Status:** ✅ Ready for Development
+**Complexity:** Medium
+**Approach:** Frontend-First (No unnecessary abstractions)

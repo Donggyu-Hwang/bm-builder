@@ -1104,7 +1104,7 @@ AI: "준혁님, 기존 문서들을 보니
 **2. ChatGPT-style Streaming Responses → AI Reasoning Visualization**
 - Show AI Node generation in real-time
 - **Why applicable:** Build user trust by seeing AI's thought process
-- **Technical Implementation:** Server-Sent Events (SSE) or WebSocket streaming via Supabase Realtime
+- **Technical Implementation:** Server-Sent Events (SSE) or WebSocket streaming via Backend API
 
 **3. Notion-style "/" Command → Quick Actions**
 - "/" to quickly add sections, create connections during Node editing
@@ -1154,7 +1154,7 @@ AI: "준혁님, 기존 문서들을 보니
    - Main thread stays responsive for user interactions
 
 3. **Delta Sync**: Send only changes, not full state
-   - WebSocket/Supabase Realtime for real-time updates
+   - WebSocket/Backend API for real-time updates
    - Bandwidth efficient, faster sync
 
 4. **Progressive Loading**: 
@@ -1222,7 +1222,7 @@ onNodeClick() → updateConversationContext()
 **1. ChatGPT-style Streaming Responses**
 - **Why:** Build trust by showing AI's thought process
 - **Application:** Show Node generation in real-time via SSE/WebSocket
-- **Technical:** Supabase Realtime for streaming infrastructure
+- **Technical:** Backend WebSocket API for streaming infrastructure
 
 **2. Notion-style "/" Command (Generative UX)**
 - **Why:** Fast workflow, keyboard-friendly, users discover possibilities
@@ -1326,8 +1326,8 @@ This decision emerged from both a cross-functional analysis (PM + Engineer + Des
 - ✅ Keyboard navigation support included
 - ✅ Screen reader compatibility
 
-**Supabase & RSC Compatibility (Party Mode Insight):**
-- ✅ Shadcn/ui works seamlessly with Supabase Auth
+**Backend Integration & RSC Compatibility (Party Mode Insight):**
+- ✅ Shadcn/ui works seamlessly with Backend API
 - ✅ React Server Components (RSC) compatible with clear `use client` boundaries
 - ✅ Server Components can use Shadcn/ui components where appropriate
 
@@ -1670,7 +1670,7 @@ The trade-offs favor Shadcn/ui because:
 - Long-term management strategy (Winston)
 - Pragmatic animation approach (Sally + Barry)
 - Speed optimization tactics (Barry)
-- Supabase/RSC compatibility confirmed (Winston)
+- Backend API/RSC compatibility confirmed (Winston)
 
 The only scenario where we'd reconsider: If we hire a senior designer who insists on a completely custom system AND we have unlimited time/budget. But even then, starting from Shadcn/ui provides a solid foundation to evolve from.
 ## Core User Experience (Party Mode Enhanced)
@@ -1893,7 +1893,7 @@ System: Document generation → Download starts immediately
 **Real-time Preview:**
 - Generation time: < 100ms (debounced)
 - Rendering: 60fps (React 19 optimization)
-- Network: WebSocket for streaming (Supabase Realtime)
+- Network: WebSocket for streaming (Backend WebSocket API)
 
 **AI Generation:**
 - Initial 80%: < 30 seconds
@@ -2336,7 +2336,7 @@ HTML 쇼케이스: `/planning-artifacts/ux-design-directions.html`
 5. **기술적 실행 가능성**
    - Shadcn/ui + Tailwind CSS로 구현 용이
    - React 19의 성능으로 부드러운 모드 전환 가능
-   - localStorage/Supabase로 레이아웃 저장 간단
+   - localStorage/Backend API로 레이아웃 저장 간단
 
 **사용자 시나리오별 최적화:**
 
@@ -2440,7 +2440,7 @@ interface LayoutState {
 
 **저장 전략:**
 - **localStorage:** 즉시 반영 (클라이언트)
-- **Supabase:** 크로스 디바이스 동기화 (로그인 사용자)
+- **Backend API:** 크로스 디바이스 동기화 (로그인 사용자)
 - **기본값:** 코드 내 하드코딩
 
 **성능 최적화:**

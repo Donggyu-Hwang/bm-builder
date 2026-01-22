@@ -28,13 +28,13 @@ _이 파일은 AI 에이전트가 bm-builder 프로젝트에서 코드를 구현
 - **Framework**: Express 4.19
 - **Language**: TypeScript 5.3
 - **Runtime**: Node.js 20+ LTS
-- **Database Client**: Supabase 2.90.1
+- **Database Client**: pg 8.11.3 (PostgreSQL)
 - **Vector Extension**: pgvector 0.5.0 (PostgreSQL 15)
 
 ### Infrastructure
 - **Frontend Hosting**: AWS S3 + CloudFront
 - **Backend Hosting**: AWS EC2 t3.medium
-- **Database**: Supabase (PostgreSQL 15)
+- **Database**: PostgreSQL 15 (pgvector 0.5.0)
 - **CI/CD**: GitHub Actions 2.327.1
 - **Monitoring**: AWS CloudWatch
 
@@ -107,7 +107,7 @@ frontend/src/
 ├── api/              # ✅ NOT 'services/' - API 호출 레이어
 │   ├── documentApi.ts
 │   ├── ragApi.ts
-│   └── supabase.ts
+│   └── client.ts      # Axios HTTP client 설정
 ├── components/       # Reusable UI components
 │   ├── ui/          # Generic UI components
 │   └── features/    # Feature-specific components
@@ -129,9 +129,10 @@ backend/src/
 ├── models/          # Data models
 └── utils/           # Utility functions
 
-backend/supabase/    # ✅ NOT at project root - Backend 팀 관리
-├── migrations/
-└── functions/
+backend/src/utils/   # Database 연결 및 유틸리티
+├── db.ts           # PostgreSQL 연결 풀 (pg.Pool)
+├── schema.sql      # DB 스키마 정의
+└── queries/        # SQL 쿼리 파일 (선택사항)
 ```
 
 **Critical Rule**: Frontend `api/`는 API 호출만 담당, Backend `services/`는 비즈니스 로직 담당. 역할 혼동 주의.
@@ -297,37 +298,46 @@ export const errorHandler = (
 
 **Critical Rule**: 모든 Endpoint는 Error Handler middleware 통해 일관된 에러 응답.
 
-### 7. Database Patterns (Supabase)
+### 7. Database Patterns (PostgreSQL)
 
-**RLS (Row Level Security) Policies:**
-```sql
--- Example: documents table
-CREATE POLICY "Users can view their own documents"
-ON documents
-FOR SELECT
-USING (auth.uid() = user_id);
+**Connection Pool Setup:**
+```typescript
+// backend/src/utils/db.ts
+import { Pool } from 'pg';
 
-CREATE POLICY "Users can insert their own documents"
-ON documents
-FOR INSERT
-WITH CHECK (auth.uid() = user_id);
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  max: 20, // Connection pool size
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
 
-CREATE POLICY "Users can update their own documents"
-ON documents
-FOR UPDATE
-USING (auth.uid() = user_id);
+export default pool;
+```
 
-CREATE POLICY "Users can delete their own documents"
-ON documents
-FOR DELETE
-USING (auth.uid() = user_id);
+**Query Pattern:**
+```typescript
+// backend/src/services/document.service.ts
+import pool from '../utils/db';
+
+export async function getUserDocuments(userId: string) {
+  const result = await pool.query(
+    'SELECT * FROM documents WHERE user_id = $1 ORDER BY created_at DESC',
+    [userId]
+  );
+  return result.rows;
+}
 ```
 
 **Critical Rules:**
-1. 모든 테이블은 RLS 활성화
-2. `auth.uid()`를 통한 접근 제어
-3. Backend에서는 Supabase Admin Client 사용 (RLS 우회 가능)
-4. Frontend에서는 Supabase Client 사용 (RLS 적용)
+1. 항상 parameterized query 사용 ($1, $2, ...) - SQL Injection 방지
+2. Connection 풀 통해 연결 재사용
+3. 모든 쿼리는 transaction으로 묶어서 원자성 보장 (필요시)
+4. Backend에서만 직접 DB 접근 (Frontend는 API 통해)
 
 ### 8. Testing Patterns
 
@@ -340,14 +350,9 @@ import { fetchDocuments } from './documentApi';
 describe('documentApi', () => {
   it('should fetch documents successfully', async () => {
     const mockDocuments = [/* ... */];
-    vi.mock('./supabase', () => ({
-      supabase: {
-        from: () => ({
-          select: () => ({
-            data: mockDocuments,
-            error: null,
-          }),
-        }),
+    vi.mock('./client', () => ({
+      axiosInstance: {
+        get: vi.fn().mockResolvedValue({ data: mockDocuments }),
       },
     }));
 
@@ -359,7 +364,7 @@ describe('documentApi', () => {
 
 **Critical Rules:**
 1. Test 파일은 `.test.ts` 또는 `.spec.ts` suffix
-2. Mock은 외부 dependency에만 사용 (Supabase, Claude API)
+2. Mock은 외부 dependency에만 사용 (PostgreSQL, Claude API)
 3. Integration Test는 실제 DB 사용 (Test environment)
 4. Coverage 목표: 80% 이상
 
@@ -406,15 +411,19 @@ useEffect(() => {
 **Environment Variables:**
 ```bash
 # Frontend (.env.local)
-VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJxxx...
+VITE_API_BASE_URL=http://localhost:3000
 VITE_APP_URL=http://localhost:5173
 
 # Backend (.env)
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJxxx... # ⚠️ Admin key - 절대 Frontend에서 노출 금지
+DB_HOST=15.164.103.114
+DB_PORT=5432
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=Entbe0421*
 CLAUDE_API_KEY=sk-ant-xxx...
 JWT_SECRET=your-secret-key
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxx
 PORT=3000
 NODE_ENV=development
 ```
@@ -422,7 +431,7 @@ NODE_ENV=development
 **Critical Rules:**
 1. 절대로 `.env` 파일을 Git에 커밋 금지
 2. `.env.example`, `.env.local.example`만 커밋
-3. Backend secret (Service Role Key)은 절대 Frontend 환경변수로 사용 금지
+3. DB_PASSWORD, CLAUDE_API_KEY, JWT_SECRET는 절대 Frontend 환경변수로 사용 금지
 4. 모든 민감 정보는 Backend 환경변수로만 관리
 
 ---
@@ -431,11 +440,11 @@ NODE_ENV=development
 
 ❌ **Forbidden Patterns:**
 
-1. **Direct Supabase Client in Frontend Components:**
+1. **Direct Database Queries in Frontend Components:**
    ```typescript
    // ❌ BAD
-   const { data } = await supabase.from('documents').select('*');
-   
+   const result = await pool.query('SELECT * FROM documents');
+
    // ✅ GOOD
    const { data } = await documentApi.getAllDocuments();
    ```
@@ -497,7 +506,7 @@ NODE_ENV=development
 **Phase 1 (MVP - 1개월):**
 1. AI Document Generation (Claude API integration)
 2. Document Embedding & Context Management (RAG with pgvector)
-3. User Onboarding & Personalization (Auth with Supabase)
+3. User Onboarding & Personalization (Auth with JWT + Passport.js)
 
 **Phase 2 (중요 - 2개월):**
 4. Team Collaboration (Polling-based)
@@ -624,60 +633,79 @@ export const selectActiveDocument = createSelector(
 
 ---
 
-### 3. Supabase: RLS Policy & Admin Client Boundary
+### 3. PostgreSQL: SQL Injection & Connection Pool Management
 
-**문제점:** Admin Client의 RLS 우회로 인한 보안 취약점
+**문제점:** SQL Injection + Connection Pool 고갈
 
 ```typescript
-// ❌ BAD: Backend에서 무분별하게 Admin Client 사용
+// ❌ BAD: String concatenation으로 쿼리 생성 (SQL Injection 취약점)
 // backend/src/controllers/document.controller.ts
-import { supabaseAdmin } from '../config/database';
-
 export const getDocument = async (req, res) => {
-  const { data, error } = await supabaseAdmin  // ⚠️ RLS 우회 - 모든 document 접근 가능
-    .from('documents')
-    .select('*')
-    .eq('id', req.params.id);
-  
-  res.json({ success: true, data });
+  const docId = req.params.id;
+  const query = `SELECT * FROM documents WHERE id = '${docId}'`;  // ⚠️ SQL Injection 가능!
+
+  const result = await pool.query(query);
+  res.json({ success: true, data: result.rows[0] });
 };
 
-// ✅ GOOD: 명시적 권한 체크 + Admin Client 제한적 사용
+// ✅ GOOD: Parameterized query 사용
 export const getDocument = async (req, res) => {
+  const docId = req.params.id;
   const userId = req.user.id;  // JWT에서 추출
-  
-  // RLS 활용: 명시적 필터링
-  const { data, error } = await supabaseAdmin
-    .from('documents')
-    .select('*')
-    .eq('id', req.params.id)
-    .eq('user_id', userId);  // ✅ 항상 user_id로 필터링
-    
-  if (error || !data.length) {
+
+  const result = await pool.query(
+    'SELECT * FROM documents WHERE id = $1 AND user_id = $2',
+    [docId, userId]  // ✅ Parameterized query - 자동 escaping
+  );
+
+  if (result.rows.length === 0) {
     return res.status(404).json({
       success: false,
       error: { code: 'NOT_FOUND', message: '문서를 찾을 수 없습니다' }
     });
   }
-  
-  res.json({ success: true, data: data[0] });
+
+  res.json({ success: true, data: result.rows[0] });
 };
 
-// ✅ BETTER: RPC 함수로 권한 체크
-const { data: hasAccess } = await supabaseAdmin.rpc('check_document_access', {
-  document_id: req.params.id,
-  user_id: userId
-});
+// ✅ BETTER: Transaction으로 원자성 보장
+async function transferDocument(docId: string, fromUserId: string, toUserId: string) {
+  const client = await pool.connect();
 
-if (!hasAccess) {
-  return res.status(403).json({
-    success: false,
-    error: { code: 'FORBIDDEN', message: '접근 권한 없음' }
-  });
+  try {
+    await client.query('BEGIN');
+
+    // 1. 문서 소유권 확인
+    const { rows } = await client.query(
+      'SELECT id FROM documents WHERE id = $1 AND user_id = $2 FOR UPDATE',
+      [docId, fromUserId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('문서를 찾을 수 없거나 권한 없음');
+    }
+
+    // 2. 소유권 변경
+    await client.query(
+      'UPDATE documents SET user_id = $1 WHERE id = $2',
+      [toUserId, docId]
+    );
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();  // ✅ Connection 풀로 반환
+  }
 }
 ```
 
-**Critical Rule:** Admin Client는 무조건 RLS 정책 또는 명시적 권한 체크 후 사용. 절대로 무조건 조회 금지.
+**Critical Rule:**
+1. 모든 쿼리는 parameterized query ($1, $2) 사용
+2. 여러 쿼리가 연관된 경우 transaction 사용
+3. 항상 client.release() 호출하여 connection 풀로 반환
+4. 절대로 string concatenation으로 쿼리 생성 금지
 
 ---
 
@@ -748,18 +776,19 @@ useEffect(() => {
 ```bash
 # ❌ BAD: VITE_ prefix로 민감 정보 정의 (번들에 노출됨)
 # .env.local (Frontend)
-VITE_SUPABASE_SERVICE_ROLE_KEY=eyJxxx...  # ⚠️ dist/index.js에 포함!
-VITE_CLAUDE_API_KEY=sk-ant-xxx...          # ⚠️ 브라우저 DevTools로 노출!
+VITE_CLAUDE_API_KEY=sk-ant-xxx...          # ⚠️ dist/index.js에 포함!
+VITE_DB_PASSWORD=Entbe0421*                 # ⚠️ 브라우저 DevTools로 노출!
 
 # ✅ GOOD: 백엔드 환경변수로만 사용
 # .env.local (Frontend)
-VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJxxx...  # ✅ Public key만 노출 (RLS로 보호)
+VITE_API_BASE_URL=http://localhost:3000
+VITE_APP_URL=http://localhost:5173
 
 # .env (Backend)
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJxxx...  # ✅ 백엔드 전용
-CLAUDE_API_KEY=sk-ant-xxx...          # ✅ 백엔드 전용
+DB_HOST=15.164.103.114
+DB_PASSWORD=Entbe0421*                     # ✅ 백엔드 전용
+CLAUDE_API_KEY=sk-ant-xxx...                # ✅ 백엔드 전용
+JWT_SECRET=your-secret-key                   # ✅ 백엔드 전용
 ```
 
 ```typescript
@@ -790,10 +819,10 @@ export async function generateDocument(prompt: string) {
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;  // ✅ 서버에서만 사용 (노출 안됨)
 ```
 
-**Critical Rule:** 
+**Critical Rule:**
 - 민감 정보는 절대 `VITE_` prefix로 정의 금지
 - 민한 정보는 항상 백엔드 환경변수 + 프록시 패턴 사용
-- Frontend bundle 확인: `npm run build && grep -r "SERVICE_ROLE\|CLAUDE_API_KEY" dist/`
+- Frontend bundle 확인: `npm run build && grep -r "DB_PASSWORD\|CLAUDE_API_KEY" dist/`
 
 ---
 
@@ -803,7 +832,7 @@ const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;  // ✅ 서버에서만 사�
 |------|-----------|--------|--------------|
 | **Discriminated Unions** | Optional 속성으로 인한 런타임 null access | 🔴 High | `Cannot read property of undefined` |
 | **Draft State** | Immer draft 참조로 state corruption | 🔴 High | 데이터 사라짐, stale state |
-| **RLS Boundary** | Admin Client 무분별 사용으로 보안 취약점 | 🔴 High | 데이터 유출, 인증 우회 |
+| **SQL Injection** | String concatenation 쿼리로 데이터베이스 공격 | 🔴 Critical | 데이터 유출, DB 장악 |
 | **Cleanup Trap** | Streaming 중 unount 시 메모리 누수 | 🟡 Medium | Memory leak, React warning |
 | **Secret Leakage** | VITE_ prefix로 API key 노출 | 🔴 Critical | API key 탈취, 과금 파괴 |
 

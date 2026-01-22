@@ -79,13 +79,13 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} role="main" aria-label="로그인 페이지">
       <div className={styles.splitLayout}>
         {/* Left Section - Conversational Interface */}
-        <div className={styles.leftSection}>
+        <div className={styles.leftSection} role="complementary" aria-label="서비스 소개">
           {/* Logo */}
-          <div className={styles.logo}>
-            <div className={styles.logoIcon}>BM</div>
+          <div className={styles.logo} role="img" aria-label="BM Builder 로고">
+            <div className={styles.logoIcon} aria-hidden="true">BM</div>
             <span>bm-builder</span>
           </div>
 
@@ -107,9 +107,9 @@ export const LoginPage = () => {
             </p>
 
             {/* Feature List */}
-            <div className={styles.featureList}>
-              <div className={styles.featureItem}>
-                <div className={styles.featureIcon}>
+            <div className={styles.featureList} role="list" aria-label="주요 기능">
+              <div className={styles.featureItem} role="listitem">
+                <div className={styles.featureIcon} aria-hidden="true">
                   <SparklesIcon />
                 </div>
                 <div className={styles.featureText}>
@@ -120,8 +120,8 @@ export const LoginPage = () => {
                 </div>
               </div>
 
-              <div className={styles.featureItem}>
-                <div className={styles.featureIcon}>
+              <div className={styles.featureItem} role="listitem">
+                <div className={styles.featureIcon} aria-hidden="true">
                   <RocketIcon />
                 </div>
                 <div className={styles.featureText}>
@@ -132,8 +132,8 @@ export const LoginPage = () => {
                 </div>
               </div>
 
-              <div className={styles.featureItem}>
-                <div className={styles.featureIcon}>
+              <div className={styles.featureItem} role="listitem">
+                <div className={styles.featureIcon} aria-hidden="true">
                   <DocumentIcon />
                 </div>
                 <div className={styles.featureText}>
@@ -148,7 +148,7 @@ export const LoginPage = () => {
         </div>
 
         {/* Right Section - Login Card */}
-        <div className={styles.rightSection}>
+        <div className={styles.rightSection} role="region" aria-label="로그인 폼">
           <div className={styles.loginCard}>
             <div className={styles.cardHeader}>
               <h2 className={styles.cardTitle}>Welcome back</h2>
@@ -162,10 +162,12 @@ export const LoginPage = () => {
               onClick={handleGoogleLogin}
               disabled={isLoading}
               className={`${styles.googleButton} ${isLoading ? styles.googleButtonLoading : ''}`}
+              aria-label={isLoading ? 'Google 계정으로 로그인 중...' : 'Google 계정으로 로그인하기'}
+              aria-busy={isLoading}
             >
               {isLoading ? (
                 <>
-                  <div className={styles.loadingSpinner}></div>
+                  <div className={styles.loadingSpinner} aria-hidden="true"></div>
                   <span className={styles.googleButtonText}>Connecting...</span>
                 </>
               ) : (
@@ -181,15 +183,20 @@ export const LoginPage = () => {
             </p>
 
             {/* Divider */}
-            <div className={styles.divider}>
+            <div className={styles.divider} role="separator" aria-orientation="horizontal">
               <div className={styles.dividerLine}></div>
               <span className={styles.dividerText}>or</span>
               <div className={styles.dividerLine}></div>
             </div>
 
             {/* Demo Link */}
-            <a href="/demo" className={styles.demoLink}>
-              <span className={styles.demoLinkIcon}>👀</span>
+            <a
+              href="/demo"
+              className={styles.demoLink}
+              role="link"
+              aria-label="데모 모드로 둘러보기 (계정 없이 이용 가능)"
+            >
+              <span className={styles.demoLinkIcon} aria-hidden="true">👀</span>
               Explore demo mode (no account needed)
             </a>
           </div>

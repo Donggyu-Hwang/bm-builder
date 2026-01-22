@@ -10,6 +10,14 @@ import prioritiesRoutes from './routes/v1/priorities.routes';
 import googleDriveRoutes from './routes/v1/googleDrive.routes';
 import fileScanRoutes from './routes/v1/fileScan.routes';
 import embeddedDocumentsRoutes from './routes/v1/embeddedDocuments.routes';
+import documentGenerationRoutes from './routes/v1/documentGeneration.routes';
+import figuresRoutes from './routes/v1/figures.routes';
+import pitchDeckRoutes from './routes/v1/pitchDeck.routes';
+import retryRoutes from './routes/v1/retry.routes';
+import generatedDocumentsRoutes from './routes/v1/generatedDocuments.routes';
+import nodesRoutes from './routes/v1/nodes.routes';
+import userPreferencesRoutes from './routes/v1/userPreferences.routes';
+import workflowShareRoutes from './routes/v1/workflowShare.routes';
 
 dotenv.config();
 
@@ -41,6 +49,14 @@ app.use('/api/v1/priorities', prioritiesRoutes);
 app.use('/api/v1/google-drive', googleDriveRoutes);
 app.use('/api/v1/file-scan', fileScanRoutes);
 app.use('/api/v1/documents', embeddedDocumentsRoutes);
+app.use('/api/v1/document-generation', documentGenerationRoutes);
+app.use('/api/v1/figures', figuresRoutes);
+app.use('/api/v1/pitch-deck', pitchDeckRoutes);
+app.use('/api/v1/retry', retryRoutes);
+app.use('/api/v1/generated-documents', generatedDocumentsRoutes);
+app.use('/api/v1', nodesRoutes);
+app.use('/api/v1/user-preferences', userPreferencesRoutes);
+app.use('/api/v1', workflowShareRoutes);
 
 // Start server only if this file is run directly
 if (require.main === module) {

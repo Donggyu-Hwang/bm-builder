@@ -175,14 +175,14 @@ totalStories: 52
 
 #### Technology Stack (정확한 버전)
 - Frontend: React 19.0, Vite 5.1, Redux Toolkit 2.10.1, React Router 7.12.0, Tailwind CSS 3.4
-- Backend: Express 4.19, TypeScript 5.3, Supabase 2.90.1
+- Backend: Express 4.19, TypeScript 5.3, pg 8.11.3
 - Database: PostgreSQL 15 + pgvector 0.5.0
 - AI Models: Claude 4.5 (Anthropic) 주요, GLM 4.7 (Zhipu AI) 보조
 
 #### AWS Deployment Architecture
 - Frontend: AWS S3 (정적 호스팅) + CloudFront (CDN)
 - Backend: AWS EC2 t3.medium (2 vCPU, 4GB RAM) [MVP]
-- Database: Supabase (MVP) 또는 AWS RDS (프로덕션)
+- Database: 자체 PostgreSQL 서버 (MVP) 또는 AWS RDS (프로덕션)
 - CI/CD: GitHub Actions 2.327.1
 - Monitoring: AWS CloudWatch
 
@@ -197,7 +197,7 @@ totalStories: 52
 - API response wrapper: `{ success: true/false, data/error }`
 
 #### Database Patterns
-- Supabase RLS (Row Level Security) policies for all tables
+- PostgreSQL Row Level Security (RLS) policies for all tables
 - Tables: profiles, documents, embedded_documents, teams, team_members
 - Admin client usage with explicit filtering or RLS bypass only
 
@@ -207,7 +207,7 @@ totalStories: 52
 - Selector memoization with reselect
 
 #### Security Implementation
-- Supabase Auth for OAuth 2.0 (Google, Naver)
+- Passport.js + JWT for OAuth 2.0 (Google, Naver)
 - Environment variables: NO `VITE_` prefix for secrets
 - Proxy pattern for all backend APIs (Claude, etc.)
 
@@ -235,12 +235,12 @@ _다음 단계에서 Epic 목록을 생성합니다._
 
 ### Epic 1: 사용자 인증 및 온보딩
 **목표:** 사용자가 가입하여 개인화된 AI 공동 창업자 경험을 시작할 수 있다
-- 사용자 등록 (Supabase Auth OAuth 2.0)
+- 사용자 등록 (Passport.js OAuth 2.0 + JWT)
 - 개인화된 온보딩 (3개 질문: 비전, 타겟, 현재 상황)
 - AI 기반 맞춤형 제안
-- Node UI 가이드 투어
 - 우선순위 제안 및 일일 플래너
 - 데모 모드
+- 비즈니스 용어 학습 지원
 
 **FRs covered:** FR1-5, FR51, FR54-59 (19개)
 **Phase:** Phase 1 (MVP 핵심)
@@ -353,7 +353,8 @@ _다음 단계에서 Epic 목록을 생성합니다._
 
 ---
 
-### Epic 9: 대시보드 및 관리자
+### Epic 9: 대시보드 및 관리자 (INTEGRATION EPIC)
+
 **목표:** 사용자가 진행 상황을 시각화하고 성취감을 느끼며, 액셀러레이터는 팀을 관리할 수 있다
 - 진행 상황 시각화
 - 성취감 강조 진행률
@@ -367,6 +368,21 @@ _다음 단계에서 Epic 목록을 생성합니다._
 **FRs covered:** FR60-61, FR68-72 (8개)
 **Phase:** Phase 2 (일부), Phase 3 (관리자 기능)
 **Dependencies:** Epic 1, 2, 3, 7
+
+**⚠️ INTEGRATION EPIC - 복잡성 고려 사항:**
+이 Epic은 4개의 이전 Epic(Epic 1, 2, 3, 7)에서 생성된 데이터를 통합하여 대시보드를 제공합니다.
+
+**개발 고려 사항:**
+- **독립 개발 어려움:** 모든 의존 Epic이 완료되어야 테스트 가능
+- **모 데이터 서비스 권장:** Epic 9 개발 시 가짜 데이터로 UI 개발 권장
+- **통합 테스트 필수:** 모든 Epic 완료 후 종단 간 통합 테스트 필요
+- **Phase 2/3 분할 고려:** 사용자 대시보드(Phase 2)와 관리자 기능(Phase 3) 분리 권장
+
+**실무적 구현 제안:**
+1. **Mock Data Service:** Epic 1, 2, 3, 7의 API 응답 형식을 모방하여 개발
+2. **Interface First:** 각 Epic이 제공해야 할 데이터 인터페이스를 먼저 정의
+3. **渐进적 통합:** 각 Epic이 완료될 때마다 해당 Epic의 데이터를 Epic 9에 연결
+4. **스텁 개발:** Epic 9를 사용자 대시보드(스텁 1)와 관리자 대시보드(스텁 2)로 분리
 
 ---
 
@@ -478,10 +494,10 @@ _다음 단계에서 Epic 목록을 생성합니다._
 
 ---
 
-### Story 1.1: 프로젝트 초기화 및 Supabase 설정
+### Story 1.1: 프로젝트 초기화 및 PostgreSQL 설정
 
 **As a** 개발자,
-**I want** Vite React TypeScript + Express TypeScript 프로젝트를 Supabase와 통합하여 초기화하려고,
+**I want** Vite React TypeScript + Express TypeScript 프로젝트를 PostgreSQL과 통합하여 초기화하려고,
 **So that** 사용자 인증과 데이터 저장 기능을 구현할 수 있다.
 
 **Acceptance Criteria:**
@@ -492,7 +508,7 @@ _다음 단계에서 Epic 목록을 생성합니다._
   - Frontend: Vite React TypeScript 프로젝트 생성
   - Backend: Express TypeScript 프로젝트 생성
   - Shared: `shared/types/` 디렉토리 구축 (User, ApiErrors types)
-  - Database: Supabase 프로젝트 생성 및 `profiles` 테이블 생성
+  - Database: PostgreSQL 데이터베이스 생성 및 `profiles` 테이블 생성
   - Environment: `.env.example`, `.env.local.example` 파일 생성
   - Monorepo: `tsconfig.json` paths 설정 (`@shared/types`)
 
@@ -504,7 +520,12 @@ _다음 단계에서 Epic 목록을 생성합니다._
   - `onboarding_completed` (boolean, default false)
   - `created_at` (timestamp)
 
-**And** Supabase CLI가 `backend/supabase/`에 초기화된다
+**And** PostgreSQL 연결 설정이 `backend/src/utils/db.ts`에 완료된다
+
+**And** Supabase 패키지가 제거되고 PostgreSQL 직접 연결 방식이 적용된다:
+  - `@supabase/supabase-js`, `@supabase/auth-helpers-react` 패키지 제거
+  - `pg` PostgreSQL 클라이언트 사용
+  - `postgres://` 연결 문자열 사용
 
 **And** 모든 환경변수가 `.env.example`에 문서화된다
 
@@ -520,11 +541,17 @@ _다음 단계에서 Epic 목록을 생성합니다._
 
 **Given** 사용자가 로그인 페이지에 방문했을 때
 **When** 사용자가 "Google로 로그인" 버튼을 클릭하면
-**Then** OAuth 2.0 플로우가 시작되고 Google 로그인 페이지로 redirect된다
+**Then** Passport.js OAuth 2.0 전략이 실행되고 Google 로그인 페이지로 redirect된다
+
+**And** Passport.js가 다음을 설정한다:
+  - `passport-google-oauth20` 전략 사용
+  - Google OAuth 2.0 credentials (client ID, secret) 설정
+  - Callback URL: `/api/v1/auth/google/callback`
+  - Scope: `profile`, `email`
 
 **And** OAuth 인증이 성공하면:
-  - Supabase Auth가 사용자 session 생성
-  - `profiles` 테이블에 사용자 레코드 생성 (RLS policy 통해 자동 생성)
+  - Backend가 JWT token (access token + refresh token)을 생성하여 사용자 session 생성
+  - `profiles` 테이블에 사용자 레코드 생성/업데이트 (자동 upsert)
   - Redux Toolkit auth state가 업데이트됨 (`user`, `session`, `isAuthenticated`)
   - 사용자가 대시보드로 redirect된다
 
@@ -541,7 +568,7 @@ _다음 단계에서 Epic 목록을 생성합니다._
   - `last_login` 타임스탬프가 업데이트된다
 
 **And** session이 만료되면:
-  - Supabase가 자동으로 token을 refresh한다
+  - Backend JWT refresh API를 통해 token이 갱신된다
   - Refresh 실패 시 로그인 페이지로 redirect된다
 
 ---
@@ -721,47 +748,6 @@ _다음 단계에서 Epic 목록을 생성합니다._
 
 ---
 
-### Story 1.8: Node UI 가이드 투어
-
-**As a** 예비 창업가,
-**I want** 1분 가이드 투어로 Node UI 사용법을 배우려고,
-**So that** 빠르게 도구에 익숙해질 수 있다.
-
-**Acceptance Criteria:**
-
-**⚠️ 이 Story는 Epic 6 (Node UI) 완료 후에 실행합니다.**
-
-**Given** 사용자가 Node UI를 처음 사용할 때 (Epic 6 완료 후)
-**When** 사용자가 캔버스에 접속하면
-**Then** 가이드 투어가 시작된다
-
-**And** 가이드 투어가 4단계로 구성된다:
-  - **Step 1/4:** "노드 생성" - 빈 캔버스를 하이라이트
-  - **Step 2/4:** "노드 연결" - 두 개의 노드를 하이라이트
-  - **Step 3/4:** "노드 편집" - 노드 더블 클릭 영역 하이라이트
-  - **Step 4/4:** "시작하기" - "이제 모든 것을 준비했습니다!"
-
-**And** 각 단계에서:
-  - 하이라이트된 영역에 dark overlay 적용
-  - Tooltip이 상단에 표시된다
-  - "다음" / "건너뛰기" 버튼 제공
-
-**And** 사용자가 가이드 투어를 완료하면:
-  - 축하 메시지: "가이드 투어를 완료했습니다! 이제 Node UI를 자유롭게 사용해보세요."
-  - `user_preferences.node_ui_tour_completed` = true
-
-**And** 사용자가 가이드 투어를 건너뛰면:
-  - "나중에 Settings에서 다시 볼 수 있습니다." 메시지
-
-**And** 가이드 투어를 다시 보고 싶으면:
-  - Settings > "Node UI 가이드 투어 다시 보기"
-
-**And** 가이드 투어 중간에 앱을 종료 후 다시 접속하면:
-  - 마지막 단계부터 재개된다
-
-
----
-
 ## Epic 2: 클라우드 연동 및 문서 임베딩
 
 ### Epic Goal
@@ -785,7 +771,13 @@ _다음 단계에서 Epic 목록을 생성합니다._
 
 **Given** 사용자가 로그인했고 대시보드에 접속했을 때
 **When** 사용자가 "Google Drive 연동하기" 버튼을 클릭하면
-**Then** Google OAuth 2.0 consent screen이 표시된다
+**Then** Passport.js OAuth 2.0 전략을 통한 Google consent screen이 표시된다
+
+**And** Passport.js가 다음을 설정한다:
+  - `passport-google-oauth20` 전략 사용 (Google Drive scope)
+  - Access type: `offline` (refresh token 발급을 위해)
+  - Scope: `https://www.googleapis.com/auth/drive.readonly`
+  - Callback URL: `/api/v1/integrations/google-drive/callback`
 
 **And** consent screen이 다음 권한을 요청한다:
   - `https://www.googleapis.com/auth/drive.readonly` (읽기 전용)
@@ -793,8 +785,8 @@ _다음 단계에서 Epic 목록을 생성합니다._
 
 **When** 사용자가 "허용"을 클릭하면
 **Then**:
-  - Google OAuth access token이 발급된다
-  - Access token이 `google_tokens` 테이블에 저장된다:
+  - Passport.js가 Google OAuth access token + refresh token을 발급받는다
+  - Token들이 `google_tokens` 테이블에 암호화되어 저장된다:
     - `user_id` (UUID)
     - `access_token` (text, encrypted)
     - `refresh_token` (text, encrypted)
@@ -979,9 +971,9 @@ _다음 단계에서 Epic 목록을 생성합니다._
   - 자동으로 retry 가능
 
 **And** Google Drive API OAuth token이 만료되면:
-  - Refresh token으로 자동으로 갱신된다
+  - Passport.js가 `google_tokens` 테이블에서 refresh token을 가져와 자동 갱신
   - Refresh token도 만료되면 "Google Drive 세션이 만료되었습니다. 다시 연동해주세요." 메시지
-  - 사용자를 OAuth 플로우로 redirect
+  - 사용자를 Story 2.1 OAuth 플로우로 redirect하여 재인증 유도
 
 
 ---
@@ -1116,7 +1108,7 @@ _다음 단계에서 Epic 목록을 생성합니다._
   - `id` (UUID)
   - `document_id` (UUID)
   - `figure_type` (text: "bar", "line", "pie", "flow")
-  - `image_url` (text, S3 또는 Supabase Storage)
+  - `image_url` (text, S3 또는 PostgreSQL bytea)
   - `caption` (text)
   - `order` (integer)
 
@@ -1980,6 +1972,44 @@ _다음 단계에서 Epic 목록을 생성합니다._
 
 ---
 
+### Story 6.5: Node UI 가이드 투어
+
+**As a** 예비 창업가,
+**I want** 1분 가이드 투어로 Node UI 사용법을 배우려고,
+**So that** 빠르게 도구에 익숙해질 수 있다.
+
+**Acceptance Criteria:**
+
+**Given** 사용자가 Node UI를 처음 사용할 때
+**When** 사용자가 캔버스에 접속하면
+**Then** 가이드 투어가 자동으로 시작된다
+
+**And** 가이드 투어가 4단계로 구성된다:
+  - **Step 1/4:** "노드 생성" - 빈 캔버스를 하이라이트
+  - **Step 2/4:** "노드 연결" - 두 개의 노드를 하이라이트
+  - **Step 3/4:** "노드 편집" - 노드 더블 클릭 영역 하이라이트
+  - **Step 4/4:** "시작하기" - "이제 모든 것을 준비했습니다!"
+
+**And** 각 단계에서:
+  - 하이라이트된 영역에 dark overlay 적용
+  - Tooltip이 상단에 표시된다
+  - "다음" / "건너뛰기" 버튼 제공
+
+**And** 사용자가 가이드 투어를 완료하면:
+  - 축하 메시지: "가이드 투어를 완료했습니다! 이제 Node UI를 자유롭게 사용해보세요."
+  - `user_preferences.node_ui_tour_completed` = true
+
+**And** 사용자가 가이드 투어를 건너뛰면:
+  - "나중에 Settings에서 다시 볼 수 있습니다." 메시지
+
+**And** 가이드 투어를 다시 보고 싶으면:
+  - Settings > "Node UI 가이드 투어 다시 보기"
+
+**And** 가이드 투어 중간에 앱을 종료 후 다시 접속하면:
+  - 마지막 단계부터 재개된다
+
+---
+
 
 ## Epic 7: 팀 협업
 
@@ -2005,7 +2035,7 @@ _다음 단계에서 Epic 목록을 생성합니다._
 
 **And** 팀이 생성되면 다음이 설정된다:
   - User가 team admin으로 지정됨
-  - Team이 Supabase `teams` table에 생성됨
+  - Team이 PostgreSQL `teams` table에 생성됨
   - Team membership이 `team_members` table에 기록됨
 
 **Given** 사용자가 팀 admin일 때

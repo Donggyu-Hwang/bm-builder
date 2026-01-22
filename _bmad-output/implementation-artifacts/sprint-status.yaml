@@ -198,38 +198,38 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: AI 문서 생성
-  epic-3: in-progress
-  3-1-document-generation-flow-ui: ready-for-dev
-  3-2-rag-based-document-generation-claude-api: backlog
-  3-3-infographic-auto-generation: backlog
-  3-4-government-support-5-forms-support: backlog
-  3-5-ir-material-generation-pitch-deck: backlog
-  3-6-ai-generation-failure-handling-and-retry: backlog
+  epic-3: done
+  3-1-document-generation-flow-ui: done
+  3-2-rag-based-document-generation-claude-api: done
+  3-3-infographic-auto-generation: done
+  3-4-government-support-5-forms-support: done
+  3-5-ir-material-generation-pitch-deck: done
+  3-6-ai-generation-failure-handling-and-retry: done
   epic-3-retrospective: optional
 
   # Epic 4: 문서 관리
-  epic-4: backlog
-  4-1-document-save-and-load: backlog
-  4-2-document-duplicate-and-delete: backlog
-  4-3-document-download-pdf-ppt: backlog
-  4-4-document-edit: backlog
+  epic-4: done
+  4-1-document-save-and-load: done
+  4-2-document-duplicate-and-delete: done
+  4-3-document-download-pdf-ppt: done
+  4-4-document-edit: done
   epic-4-retrospective: optional
 
   # Epic 5: 사용자 인터페이스 및 접근성
-  epic-5: backlog
-  5-1-dark-mode-implementation: backlog
-  5-2-responsive-design-mobile-tablet-desktop: backlog
-  5-3-wcag-2-1-level-aa-compliance: backlog
-  5-4-emotional-error-messages-and-keyboard-navigation: backlog
+  epic-5: done
+  5-1-dark-mode-implementation: done
+  5-2-responsive-design-mobile-tablet-desktop: done
+  5-3-wcag-2-1-level-aa-compliance: done
+  5-4-emotional-error-messages-and-keyboard-navigation: done
   epic-5-retrospective: optional
 
   # Epic 6: Visual Workflow Management (Node UI)
-  epic-6: backlog
-  6-1-node-based-canvas-basic-structure: backlog
-  6-2-node-drag-and-drop-and-editing: backlog
+  epic-6: in-progress
+  6-1-node-based-canvas-basic-structure: done
+  6-2-node-drag-and-drop-and-editing: done
   6-3-node-connection-lines-and-flow-visualization: backlog
   6-4-infinite-canvas-and-navigation: backlog
-  6-5-node-ui-export-and-sharing: backlog
+  6-5-node-ui-export-and-sharing: done
   6-6-node-ui-guide-tour: backlog
   epic-6-retrospective: optional
 

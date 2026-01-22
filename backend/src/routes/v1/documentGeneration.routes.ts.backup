@@ -1,0 +1,388 @@
+import { Router, Response } from 'express';
+import { documentTemplateService } from '../../services/documentTemplate.service';
+import { requireAuth, AuthRequest } from '../../middleware/auth.middleware';
+
+const router = Router();
+
+/**
+ * GET /api/v1/document-templates
+ * Get all document templates
+ */
+router.get('/templates', requireAuth, async (_req: AuthRequest, res: Response) => {
+  try {
+    const templates = await documentTemplateService.getAllTemplates();
+
+    res.json({
+      success: true,
+      data: templates
+    });
+  } catch (error) {
+    console.error('Error fetching templates:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'TEMPLATES_FETCH_FAILED',
+        message: '템플릿 목록을 불러오는데 실패했습니다'
+      }
+    });
+  }
+});
+
+/**
+ * GET /api/v1/document-templates/category/:category
+ * Get templates by category
+ */
+router.get('/templates/category/:category', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { category } = req.params;
+
+    // Validate category
+    if (category !== 'gov_support' && category !== 'ir_material') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_CATEGORY',
+          message: '유효하지 않은 카테고리입니다'
+        }
+      });
+    }
+
+    const templates = await documentTemplateService.getTemplatesByCategory(category as 'gov_support' | 'ir_material');
+
+    res.json({
+      success: true,
+      data: templates
+    });
+  } catch (error) {
+    console.error('Error fetching templates by category:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'TEMPLATES_FETCH_FAILED',
+        message: '카테고리별 템플릿을 불러오는데 실패했습니다'
+      }
+    });
+  }
+});
+
+/**
+ * POST /api/v1/document-generation/start
+ * Start a new document generation session
+ */
+router.post('/start', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { template_type } = req.body;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: '인증되지 않은 사용자입니다'
+        }
+      });
+    }
+
+    if (!template_type) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_TEMPLATE_TYPE',
+          message: '템플릿 타입이 필요합니다'
+        }
+      });
+    }
+
+    // Validate template exists
+    const template = await documentTemplateService.getTemplateByType(template_type);
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'TEMPLATE_NOT_FOUND',
+          message: '유효하지 않은 템플릿 타입입니다'
+        }
+      });
+    }
+
+    // Create session
+    const session = await documentTemplateService.createSession(userId, template_type);
+
+    res.json({
+      success: true,
+      data: {
+        session_id: session.id,
+        template_type: session.template_type,
+        template_name: template.template_name,
+        category: template.category
+      }
+    });
+  } catch (error) {
+    console.error('Error starting document generation:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'SESSION_CREATE_FAILED',
+        message: '문서 생성 세션을 시작하는데 실패했습니다'
+      }
+    });
+  }
+});
+
+/**
+ * POST /api/v1/document-generation/:sessionId/answer
+ * Save answer to a question
+ */
+router.post('/:sessionId/answer', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const { question_number, answer } = req.body;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: '인증되지 않은 사용자입니다'
+        }
+      });
+    }
+
+    // Validate session exists
+    const session = await documentTemplateService.getSession(sessionId, userId!);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: '유효하지 않은 세션입니다'
+        }
+      });
+    }
+
+    // Validate session status
+    if (session.status !== 'interview') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_SESSION_STATUS',
+          message: '인터뷰 중인 세션만 답변을 저장할 수 있습니다'
+        }
+      });
+    }
+
+    // Validate inputs
+    if (typeof question_number !== 'number' || question_number < 1) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_QUESTION_NUMBER',
+          message: '유효하지 않은 질문 번호입니다'
+        }
+      });
+    }
+
+    if (typeof answer !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_ANSWER',
+          message: '답변은 문자열이어야 합니다'
+        }
+      });
+    }
+
+    // Save answer
+    await documentTemplateService.saveAnswer(sessionId, userId!, question_number, answer);
+
+    res.json({
+      success: true,
+      data: {
+        message: '답변이 저장되었습니다'
+      }
+    });
+  } catch (error) {
+    console.error('Error saving answer:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'ANSWER_SAVE_FAILED',
+        message: '답변 저장에 실패했습니다'
+      }
+    });
+  }
+});
+
+/**
+ * POST /api/v1/document-generation/:sessionId/complete-interview
+ * Mark interview as complete
+ */
+router.post('/:sessionId/complete-interview', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: '인증되지 않은 사용자입니다'
+        }
+      });
+    }
+
+    // Validate session exists
+    const session = await documentTemplateService.getSession(sessionId, userId!);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: '유효하지 않은 세션입니다'
+        }
+      });
+    }
+
+    // Check if all required questions are answered
+    const answers = await documentTemplateService.getSessionAnswers(sessionId, userId!);
+    const answerCount = Object.keys(answers).length;
+
+    if (answerCount === 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'NO_ANSWERS',
+          message: '최소 한 개 이상의 질문에 답변해야 합니다'
+        }
+      });
+    }
+
+    // Update session status
+    await documentTemplateService.updateSessionStatus(sessionId, userId!, 'completed');
+
+    res.json({
+      success: true,
+      data: {
+        message: '인터뷰가 완료되었습니다',
+        session_id: sessionId,
+        answer_count: answerCount
+      }
+    });
+  } catch (error) {
+    console.error('Error completing interview:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERVIEW_COMPLETE_FAILED',
+        message: '인터뷰 완료 처리에 실패했습니다'
+      }
+    });
+  }
+});
+
+/**
+ * DELETE /api/v1/document-generation/:sessionId
+ * Abandon document generation session
+ */
+router.delete('/:sessionId', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: '인증되지 않은 사용자입니다'
+        }
+      });
+    }
+
+    // Validate session exists
+    const session = await documentTemplateService.getSession(sessionId, userId!);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: '유효하지 않은 세션입니다'
+        }
+      });
+    }
+
+    // Update status to abandoned
+    await documentTemplateService.updateSessionStatus(sessionId, userId!, 'abandoned');
+
+    res.json({
+      success: true,
+      data: {
+        message: '문서 생성이 중단되었습니다'
+      }
+    });
+  } catch (error) {
+    console.error('Error abandoning session:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'SESSION_ABANDON_FAILED',
+        message: '세션 중단에 실패했습니다'
+      }
+    });
+  }
+});
+
+/**
+ * GET /api/v1/document-generation/:sessionId/progress
+ * Get current session progress
+ */
+router.get('/:sessionId/progress', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: '인증되지 않은 사용자입니다'
+        }
+      });
+    }
+
+    const session = await documentTemplateService.getSession(sessionId, userId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: '유효하지 않은 세션입니다'
+        }
+      });
+    }
+
+    const answers = await documentTemplateService.getSessionAnswers(sessionId, userId!);
+
+    res.json({
+      success: true,
+      data: {
+        session_id: session.id,
+        template_type: session.template_type,
+        status: session.status,
+        current_question: session.current_question_number,
+        answers: answers,
+        answer_count: Object.keys(answers).length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching session progress:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'PROGRESS_FETCH_FAILED',
+        message: '진행 상황을 불러오는데 실패했습니다'
+      }
+    });
+  }
+});
+
+export default router;

@@ -121,7 +121,7 @@ bm-builder는 다음 5가지 차별점으로 경쟁사와 구별됩니다:
 **핵심 기술 스택:**
 - Frontend: React (Vite), React Flow (Node UI)
 - Backend: Node.js (Express)
-- Database: Supabase (PostgreSQL + pgvector for RAG)
+- Database: PostgreSQL (pgvector 확장 for RAG)
 - AI Models: Claude 4.5 (Anthropic), GLM 4.7 (Zhipu AI)
 - Cloud Storage: Google Drive, OneDrive, Dropbox
 - Infrastructure: Vercel (frontend), Railway/Render (backend)
@@ -1204,7 +1204,7 @@ Step 3/4: 인포그래픽 생성 대기 중...
 - **문제:** 3개월 MVP → 6개월
 - **완화:**
   - MVP 범위 축소: 정부지원사업 **3개만** (나머지 2개는 Post-MVP)
-  - No-code/Low-code 도구 활용 (Supabase, Vercel)
+  - 표준 기술 스택 활용 (PostgreSQL, Vercel)
   - Node UI: React Flow 커스터마이징 최소화
 
 **리스크 2: 팀 규모**

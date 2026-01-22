@@ -8,6 +8,7 @@ import { selectGoogleDrive } from '@/store/slices/googleDriveSlice';
 import { WelcomeModal } from '@/components/welcome/WelcomeModal';
 import { PrioritiesList } from '@/components/priorities/PrioritiesList';
 import { ScanProgress } from '@/components/fileScan/ScanProgress';
+import { Navigation } from '@/components/navigation/Navigation';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -65,25 +66,33 @@ export const DashboardPage = () => {
 
   return (
     <>
+      {/* Navigation */}
+      <Navigation />
+
       {/* Welcome Modal */}
       <WelcomeModal />
 
       {/* Dashboard Content */}
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
-            <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
-            <p className="mt-2 text-gray-600">환영합니다, {user.full_name || user.email}님!</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="px-0 sm:px-0">
+            {/* Header */}
+            <div className="mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">대시보드</h1>
+              <p className="mt-2 text-base sm:text-lg text-gray-600">
+                환영합니다, {user.full_name || user.email}님!
+              </p>
+            </div>
 
             {/* File Scan Progress Section */}
             {googleDriveConnected && (
-              <div className="mt-8">
+              <div className="mt-6 sm:mt-8">
                 <ScanProgress />
               </div>
             )}
 
             {/* Priorities Section */}
-            <div className="mt-8">
+            <div className="mt-6 sm:mt-8">
               <PrioritiesList />
             </div>
           </div>

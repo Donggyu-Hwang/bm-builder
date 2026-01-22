@@ -6,6 +6,8 @@ import prioritiesReducer from './slices/prioritiesSlice';
 import googleDriveReducer from './slices/googleDriveSlice';
 import fileScanReducer from './slices/fileScanSlice';
 import embeddedDocumentsReducer from './slices/embeddedDocumentsSlice';
+import documentGenerationReducer from './slices/documentGenerationSlice';
+import themeReducer from './slices/themeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +18,8 @@ export const store = configureStore({
     googleDrive: googleDriveReducer,
     fileScan: fileScanReducer,
     embeddedDocuments: embeddedDocumentsReducer,
+    documentGeneration: documentGenerationReducer,
+    theme: themeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
