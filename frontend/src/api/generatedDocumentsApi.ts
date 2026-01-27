@@ -114,4 +114,40 @@ export const generatedDocumentsApi = {
     const response = await api.post(`/generated-documents/${id}/duplicate`);
     return response.data.data;
   },
+
+  /**
+   * Get all documents for a team
+   */
+  async getTeamDocuments(
+    teamId: string,
+    params?: GetUserDocumentsParams
+  ): Promise<PaginatedDocumentsResponse> {
+    const response = await api.get(`/generated-documents/team/${teamId}`, { params });
+    return response.data;
+  },
+
+  /**
+   * Update document sharing settings
+   */
+  async updateDocumentSharing(
+    id: string,
+    settings: {
+      team_id?: string;
+      sharing_access?: 'anyone' | 'team' | 'specific';
+      sharing_permission?: 'view' | 'edit' | 'comment';
+      link_password?: string;
+      link_expires_at?: string;
+    }
+  ): Promise<GeneratedDocument> {
+    const response = await api.patch(`/generated-documents/${id}/sharing`, settings);
+    return response.data.data;
+  },
+
+  /**
+   * Get document by share link
+   */
+  async getSharedDocument(shareLink: string): Promise<GeneratedDocument> {
+    const response = await api.get(`/generated-documents/share/${shareLink}`);
+    return response.data.data;
+  },
 };

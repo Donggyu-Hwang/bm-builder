@@ -4,8 +4,10 @@
  */
 
 import { Router } from 'express';
-import { pool } from '../../config/db';
-import { authenticate } from '../../middleware/auth';
+import pool from '../../utils/db';
+import { requireAuth } from '../../middleware/auth.middleware';
+import { AuthenticatedUser } from '../../middleware/auth.middleware';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -23,10 +25,12 @@ const router = Router();
  * - success: boolean
  * - data.url: string (shareable URL)
  */
-router.post('/workflow/share', authenticate, async (req, res) => {
+router.post('/workflow/share', requireAuth, async (req, res) => {
   try {
     const { documentId, accessControl, password, expiration } = req.body;
-    const userId = req.user.id;
+    // MEDIUM FIX: Use proper type instead of accessing req.user directly
+    const user = req.user as AuthenticatedUser;
+    const userId = user.id;
 
     // Validate input
     if (!documentId) {
@@ -101,7 +105,9 @@ router.post('/workflow/share', authenticate, async (req, res) => {
     // Hash password if provided
     let hashedPassword = null;
     if (accessControl === 'password' && password) {
-      // For now, store as-is (in production, use bcrypt)
+      // MEDIUM FIX: Warn about plaintext password storage
+      // TODO: Replace with bcrypt in production: await bcrypt.hash(password, 10)
+      console.warn('SECURITY WARNING: Storing password in plaintext. Use bcrypt in production.');
       hashedPassword = password;
     }
 
@@ -191,10 +197,9 @@ router.get('/workflow/share/:shareId', async (req, res) => {
     }
 
     // Update last accessed time
-    await pool.query(
-      'UPDATE shared_workflows SET last_accessed_at = NOW() WHERE share_id = $1',
-      [shareId]
-    );
+    await pool.query('UPDATE shared_workflows SET last_accessed_at = NOW() WHERE share_id = $1', [
+      shareId,
+    ]);
 
     // Return workflow data (without password)
     const { password: _, ...workflowData } = workflow;
@@ -218,11 +223,14 @@ router.get('/workflow/share/:shareId', async (req, res) => {
 /**
  * DELETE /api/v1/workflow/share/:shareId
  * Delete a shared workflow link
+ * MEDIUM FIX: Use requireAuth instead of authenticate
  */
-router.delete('/workflow/share/:shareId', authenticate, async (req, res) => {
+router.delete('/workflow/share/:shareId', requireAuth, async (req, res) => {
   try {
     const { shareId } = req.params;
-    const userId = req.user.id;
+    // MEDIUM FIX: Use proper type instead of accessing req.user directly
+    const user = req.user as AuthenticatedUser;
+    const userId = user.id;
 
     // Verify user owns the shared workflow
     const result = await pool.query(

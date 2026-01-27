@@ -3,9 +3,10 @@
  * Represents the starting point of a document workflow
  */
 
+import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 
-export default function StartNode({ data }: NodeProps) {
+function StartNode({ data }: NodeProps) {
   return (
     <div className="px-6 py-4 shadow-md rounded-full bg-green-100 border-2 border-green-500">
       <div className="font-bold text-green-800">{data.label}</div>
@@ -13,3 +14,5 @@ export default function StartNode({ data }: NodeProps) {
     </div>
   );
 }
+
+export default memo(StartNode);

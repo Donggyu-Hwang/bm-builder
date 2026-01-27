@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { User } from '../../../../shared/types/user.types';
+import { endDemoMode } from './demoSlice';
 
 // Re-export User type for convenience
 export type { User };
@@ -19,52 +20,46 @@ const initialState: AuthState = {
 };
 
 // Async thunks
-export const checkAuth = createAsyncThunk(
-  'auth/checkAuth',
-  async (_, { rejectWithValue }) => {
-    try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
-        credentials: 'include',
-      });
+export const checkAuth = createAsyncThunk('auth/checkAuth', async (_, { rejectWithValue }) => {
+  try {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+      credentials: 'include',
+    });
 
-      if (!response.ok) {
-        throw new Error('Authentication check failed');
-      }
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || 'Authentication failed');
-      }
-
-      return data.data.user as User;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to check authentication');
+    if (!response.ok) {
+      throw new Error('Authentication check failed');
     }
-  }
-);
 
-export const logoutUser = createAsyncThunk(
-  'auth/logoutUser',
-  async (_, { rejectWithValue }) => {
-    try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+    const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error('Logout failed');
-      }
-
-      return true;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to logout');
+    if (!data.success) {
+      throw new Error(data.error?.message || 'Authentication failed');
     }
+
+    return data.data.user as User;
+  } catch (error: any) {
+    return rejectWithValue(error.message || 'Failed to check authentication');
   }
-);
+});
+
+export const logoutUser = createAsyncThunk('auth/logoutUser', async (_, { rejectWithValue }) => {
+  try {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Logout failed');
+    }
+
+    return true;
+  } catch (error: any) {
+    return rejectWithValue(error.message || 'Failed to logout');
+  }
+});
 
 export const refreshToken = createAsyncThunk(
   'auth/refreshToken',

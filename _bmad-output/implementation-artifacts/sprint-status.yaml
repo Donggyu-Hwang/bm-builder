@@ -184,7 +184,7 @@ development_status:
   1-3-onboarding-flow: done
   1-4-personalized-welcome-message: done
   1-5-ai-customized-suggestions: done
-  1-6-demo-mode: backlog
+  1-6-demo-mode: done
   1-7-learning-support-business-term-tooltips: backlog
   epic-1-retrospective: optional
 
@@ -224,43 +224,43 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Visual Workflow Management (Node UI)
-  epic-6: in-progress
+  epic-6: done
   6-1-node-based-canvas-basic-structure: done
   6-2-node-drag-and-drop-and-editing: done
-  6-3-node-connection-lines-and-flow-visualization: backlog
-  6-4-infinite-canvas-and-navigation: backlog
+  6-3-node-connection-lines-and-flow-visualization: done
+  6-4-infinite-canvas-and-navigation: done
   6-5-node-ui-export-and-sharing: done
-  6-6-node-ui-guide-tour: backlog
+  6-6-node-ui-guide-tour: done
   epic-6-retrospective: optional
 
   # Epic 7: 팀 협업
-  epic-7: backlog
-  7-1-team-creation-and-invitation: backlog
-  7-2-permission-system-and-roles: backlog
-  7-3-shared-document-workspace: backlog
-  7-4-comments-and-feedback: backlog
-  7-5-version-based-collaboration-polling: backlog
-  7-6-team-activity-dashboard: backlog
+  epic-7: done
+  7-1-team-creation-and-invitation: done
+  7-2-permission-system-and-roles: done
+  7-3-shared-document-workspace: done
+  7-4-comments-and-feedback: done
+  7-5-version-based-collaboration-polling: done
+  7-6-team-activity-dashboard: done
   epic-7-retrospective: optional
 
   # Epic 8: 실시간 협업 및 버전 관리
-  epic-8: backlog
-  8-1-websocket-connection-and-presence: backlog
-  8-2-real-time-simultaneous-editing-ot-crdt: backlog
-  8-3-real-time-comments-and-discussion: backlog
-  8-4-version-history-and-restore: backlog
-  8-5-conflict-resolution-and-merge: backlog
-  8-6-real-time-collaborative-cursors-and-selection: backlog
+  epic-8: done
+  8-1-websocket-connection-and-presence: done
+  8-2-real-time-simultaneous-editing-ot-crdt: done
+  8-3-real-time-comments-and-discussion: done
+  8-4-version-history-and-restore: done
+  8-5-conflict-resolution-and-merge: done
+  8-6-real-time-collaborative-cursors-and-selection: done
   epic-8-retrospective: optional
 
   # Epic 9: 대시보드 및 관리자 기능
-  epic-9: backlog
-  9-1-personal-progress-dashboard: backlog
-  9-2-document-analysis-and-performance-report: backlog
-  9-3-team-admin-dashboard: backlog
-  9-4-team-member-management-and-permission-control: backlog
-  9-5-system-settings-and-preferences: backlog
-  9-6-payment-and-plan-management: backlog
-  9-7-system-logs-and-audit-trail: backlog
-  9-8-admin-system-health-monitoring: backlog
+  epic-9: done
+  9-1-personal-progress-dashboard: done
+  9-2-document-analysis-and-performance-report: done
+  9-3-team-admin-dashboard: done
+  9-4-team-member-management-and-permission-control: done
+  9-5-system-settings-and-preferences: done
+  9-6-payment-and-plan-management: done
+  9-7-system-logs-and-audit-trail: done
+  9-8-admin-system-health-monitoring: done
   epic-9-retrospective: optional

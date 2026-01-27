@@ -34,7 +34,7 @@ export class DocumentGenerationService {
    * Generate a document (starts background process)
    */
   async generateDocument(params: GenerateDocumentParams): Promise<string> {
-    const { userId, templateType, answers } = params;
+    const { userId, templateType } = params;
 
     // Create document record
     const { rows: docRows } = await pool.query(
@@ -72,11 +72,7 @@ export class DocumentGenerationService {
       // Stage 2: Search similar documents (30-60%)
       await this.updateProgress(documentId, 35, '관련 문서를 검색 중...');
 
-      const similarDocs = await ragService.searchSimilarDocuments(
-        params.userId,
-        keywords,
-        5
-      );
+      const similarDocs = await ragService.searchSimilarDocuments(params.userId, keywords, 5);
 
       const context = ragService.buildContext(similarDocs);
       await this.updateProgress(documentId, 60, '문서 검색 완료');
@@ -98,21 +94,21 @@ export class DocumentGenerationService {
       const generatedContent = result.content;
 
       // Update AI provider used
-      await pool.query(
-        `UPDATE documents SET ai_provider = $1 WHERE id = $2`,
-        [result.provider, documentId]
-      );
+      await pool.query(`UPDATE documents SET ai_provider = $1 WHERE id = $2`, [
+        result.provider,
+        documentId,
+      ]);
 
       // Stage 4: Generate figures (90-95%)
       await this.updateProgress(documentId, 92, '인포그래픽 생성 중...');
 
-      const figureOpportunities = figureService.identifyFigureOpportunities(
-        generatedContent
-      );
+      const figureOpportunities = figureService.identifyFigureOpportunities(generatedContent);
 
       // Create figure records
       for (let i = 0; i < figureOpportunities.length; i++) {
         const opportunity = figureOpportunities[i];
+        if (!opportunity) continue;
+
         const placeholder = figureService.generateFigurePlaceholder(
           opportunity.type,
           opportunity.context
@@ -157,10 +153,7 @@ export class DocumentGenerationService {
   /**
    * Build user prompt from answers and context
    */
-  private buildUserPrompt(
-    answers: Record<string, string>,
-    context: string
-  ): string {
+  private buildUserPrompt(answers: Record<string, string>, context: string): string {
     const answersText = Object.entries(answers)
       .map(([questionNum, answer]) => `Q${questionNum}: ${answer}`)
       .join('\n\n');
@@ -217,10 +210,10 @@ Please generate a professional, well-structured document that:
    * Get document by ID
    */
   async getDocument(documentId: string, userId: string): Promise<DocumentRecord> {
-    const { rows } = await pool.query(
-      'SELECT * FROM documents WHERE id = $1 AND user_id = $2',
-      [documentId, userId]
-    );
+    const { rows } = await pool.query('SELECT * FROM documents WHERE id = $1 AND user_id = $2', [
+      documentId,
+      userId,
+    ]);
 
     if (rows.length === 0) {
       throw new Error('Document not found');
@@ -247,10 +240,7 @@ Please generate a professional, well-structured document that:
    * Delete document
    */
   async deleteDocument(documentId: string, userId: string): Promise<void> {
-    await pool.query(
-      'DELETE FROM documents WHERE id = $1 AND user_id = $2',
-      [documentId, userId]
-    );
+    await pool.query('DELETE FROM documents WHERE id = $1 AND user_id = $2', [documentId, userId]);
   }
 }
 

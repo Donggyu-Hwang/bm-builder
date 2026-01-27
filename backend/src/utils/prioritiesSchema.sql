@@ -1,7 +1,7 @@
 -- Create daily_priorities table
 CREATE TABLE IF NOT EXISTS daily_priorities (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
   priorities JSONB NOT NULL DEFAULT '[]'::jsonb,
   source TEXT NOT NULL DEFAULT 'manual', -- 'ai_suggestion' or 'manual'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

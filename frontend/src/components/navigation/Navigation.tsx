@@ -28,6 +28,7 @@ export const Navigation = ({ currentPage }: NavigationProps) => {
     { path: '/dashboard', label: '대시보드', icon: '📊' },
     { path: '/documents', label: '문서 관리', icon: '📄' },
     { path: '/create', label: '문서 생성', icon: '✨' },
+    { path: '/teams', label: '팀 관리', icon: '👥' },
     { path: '/settings', label: '설정', icon: '⚙️' },
   ];
 
@@ -88,12 +89,7 @@ export const Navigation = ({ currentPage }: NavigationProps) => {
               aria-label="메뉴 열기"
             >
               {isMobileMenuOpen ? (
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -102,12 +98,7 @@ export const Navigation = ({ currentPage }: NavigationProps) => {
                   />
                 </svg>
               ) : (
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

@@ -4,12 +4,12 @@ import {
   updateThemePreference,
   updateShowTooltipsPreference,
 } from '../../services/userPreferences.service';
-import { authenticateToken } from '../../middleware/auth';
+import { requireAuth } from '../../middleware/auth.middleware';
 
 const router = Router();
 
-// All routes require authentication
-router.use(authenticateToken);
+// MEDIUM FIX: Use requireAuth for consistency across routes
+router.use(requireAuth);
 
 /**
  * GET /api/v1/user-preferences
@@ -17,7 +17,14 @@ router.use(authenticateToken);
  */
 router.get('/', async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const user = req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+      });
+    }
+    const userId = user.id;
 
     if (!userId) {
       return res.status(401).json({
@@ -54,7 +61,14 @@ router.get('/', async (req, res) => {
  */
 router.put('/theme', async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const user = req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+      });
+    }
+    const userId = user.id;
 
     if (!userId) {
       return res.status(401).json({
@@ -104,7 +118,14 @@ router.put('/theme', async (req, res) => {
  */
 router.put('/tooltips', async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const user = req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+      });
+    }
+    const userId = user.id;
 
     if (!userId) {
       return res.status(401).json({

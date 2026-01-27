@@ -55,7 +55,9 @@ export class ClaudeService {
         if (!isLastAttempt) {
           // Exponential backoff: 1s, 2s, 4s
           const backoffTime = Math.pow(2, attempt - 1) * 1000;
-          console.log(`Attempt ${attempt} failed: ${errorMessage}, retrying in ${backoffTime}ms...`);
+          console.log(
+            `Attempt ${attempt} failed: ${errorMessage}, retrying in ${backoffTime}ms...`
+          );
           await this.sleep(backoffTime);
           continue;
         }
@@ -185,7 +187,7 @@ JSON 형식으로 응답해주세요:
    * Sleep utility for retry backoff
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -209,7 +211,7 @@ JSON 형식으로 응답해주세요:
       });
 
       const content = response.content[0];
-      if (content.type === 'text') {
+      if (content && content.type === 'text') {
         return content.text;
       }
 
@@ -241,12 +243,12 @@ Return ONLY the questions, one per line, with no numbering or additional text.`,
       });
 
       const content = response.content[0];
-      if (content.type === 'text') {
+      if (content && content.type === 'text') {
         return content.text
           .split('\n')
-          .map((q) => q.trim())
-          .filter((q) => q.length > 0)
-          .filter((q) => !q.match(/^\d+[\.\)]/)) // Remove numbered lists
+          .map((q: string) => q.trim())
+          .filter((q: string) => q.length > 0)
+          .filter((q: string) => !q.match(/^\d+[\.\)]/)) // Remove numbered lists
           .slice(0, 10); // Max 10 questions
       }
 
@@ -260,89 +262,69 @@ Return ONLY the questions, one per line, with no numbering or additional text.`,
 
   /**
    * Fallback questions for when Claude API is unavailable
+   * MEDIUM FIX: Loaded from JSON file for better maintainability
    */
   private getFallbackQuestions(templateType: string): string[] {
-    const fallbackQuestions: Record<string, string[]> = {
-      preliminary_startup: [
-        '사업의 핵심 아이디어는 무엇인가요?',
-        '타겟 고객층은 누구인가요?',
-        '경쟁사와의 차별점은 무엇인가요?',
-        '현재 사업 단계는 어떻게 되나요?',
-        '향후 1년간의 목표는 무엇인가요?',
-      ],
-      early_startup: [
-        '제품/서비스의 핵심 기능은 무엇인가요?',
-        '현재 매출 모델은 어떻게 되나요?',
-        '첫 번째 고객을 어떻게 확보했나요?',
-        '팀 구성은 어떻게 되나요?',
-        '성장을 위한 주요 장애요소는?',
-      ],
-      rd_project: [
-        'R&D 프로젝트의 핵심 기술은 무엇인가요?',
-        '기술의 혁신성과 차별점은?',
-        '시장화 가능성은 어떻게 되나요?',
-        '연구 개발 일정은?',
-        '필요한 자원과 예산은?',
-      ],
-      growth_stage: [
-        '현재 매출 규모와 성장률은?',
-        '주요 성장 동인은 무엇인가요?',
-        '확장 계획은 어떻게 되나요?',
-        '조직 구성은 어떻게 되나요?',
-        '향후 3년 목표는?',
-      ],
-      specialized_support: [
-        '사업의 특화 분야는 무엇인가요?',
-        '전문성을 입증할 수 있는 데이터는?',
-        '해당 분야의 시장 전망은?',
-        '필요한 전문 인력은?',
-        '정부 지금 활용 계획은?',
-      ],
-      pitch_deck: [
-        '회사의 미션과 비전은 무엇인가요?',
-        '해결하고자 하는 문제는 무엇인가요?',
-        '솔루션의 핵심 기능은 무엇인가요?',
-        '시장 규모는 어느 정도인가요?',
-        '비즈니스 모델은 어떻게 되나요?',
-        '팀 구성은 어떻게 되나요?',
-        '투자 필요 금액과 용도는?',
-      ],
-      one_pager: [
-        '회사/프로젝트를 한 문장으로 소개한다면?',
-        '핵심 제안 내용은?',
-        '타겟 고객은 누구인가요?',
-        '경쟁 우위는 무엇인가요?',
-        '성과 지표는 어떻게 되나요?',
-      ],
-      business_model_canvas: [
-        '가치 제안(Value Proposition)은?',
-        '고객 세그먼트는?',
-        '수익 모델은?',
-        '핵심 자원은?',
-        '핵심 활동은?',
-        '핵심 파트너는?',
-        '비용 구조는?',
-        '고객 관계는?',
-        '채널은?',
-      ],
-    };
-
-    return (
-      fallbackQuestions[templateType] || [
+    try {
+      // Dynamically import JSON file
+      const fallbackData = require('../../data/fallbackQuestions.json');
+      return (
+        fallbackData[templateType] || [
+          '사업의 핵심 가치는 무엇인가요?',
+          '타겟 시장은 어디인가요?',
+          '주요 경쟁자는 누구인가요?',
+          '매출 모델은 어떻게 되나요?',
+          '성장 계획을 설명해주세요',
+        ]
+      );
+    } catch (error) {
+      console.error('Failed to load fallback questions from JSON:', error);
+      // Return hardcoded default if JSON file is not available
+      return [
         '사업의 핵심 가치는 무엇인가요?',
         '타겟 시장은 어디인가요?',
         '주요 경쟁자는 누구인가요?',
         '매출 모델은 어떻게 되나요?',
         '성장 계획을 설명해주세요',
-      ]
-    );
+      ];
+    }
   }
 
   /**
    * Check if API key is configured
+   * CRITICAL FIX: Enhanced validation to detect placeholder/invalid keys
    */
   isConfigured(): boolean {
-    return !!process.env.CLAUDE_API_KEY;
+    const key = process.env.CLAUDE_API_KEY;
+
+    // Check if key exists
+    if (!key) {
+      return false;
+    }
+
+    // Check for common placeholder values
+    const invalidPlaceholders = [
+      'your-api-key',
+      'your-claude-api-key',
+      'sk-ant-api03',
+      'sk-ant-ap03',
+    ];
+
+    const normalizedKey = key.toLowerCase().trim();
+    if (invalidPlaceholders.some((placeholder) => normalizedKey.includes(placeholder))) {
+      return false;
+    }
+
+    // Claude API keys should start with 'sk-ant-' and be at least 40 characters
+    if (!key.startsWith('sk-ant-')) {
+      return false;
+    }
+
+    if (key.length < 40) {
+      return false;
+    }
+
+    return true;
   }
 }
 

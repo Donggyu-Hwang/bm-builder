@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import { googleDriveApi } from '../../api/googleDriveApi';
 
 // State interface
@@ -15,7 +15,7 @@ const initialState: GoogleDriveState = {
   isConnecting: false,
   isDisconnecting: false,
   isReconnecting: false,
-  error: null
+  error: null,
 };
 
 // Error type for rejectWithValue
@@ -29,24 +29,17 @@ export const checkConnectionStatus = createAsyncThunk<
   { googleDriveConnected: boolean },
   void,
   { rejectValue: ApiError }
->(
-  'googleDrive/checkStatus',
-  async (_, { rejectWithValue }) => {
-    const result = await googleDriveApi.getStatus();
+>('googleDrive/checkStatus', async (_, { rejectWithValue }) => {
+  const result = await googleDriveApi.getStatus();
 
-    if (!result.success) {
-      return rejectWithValue(result.error);
-    }
-
-    return result.data;
+  if (!result.success) {
+    return rejectWithValue(result.error);
   }
-);
 
-export const connectGoogleDrive = createAsyncThunk<
-  void,
-  void,
-  { rejectValue: ApiError }
->(
+  return result.data;
+});
+
+export const connectGoogleDrive = createAsyncThunk<void, void, { rejectValue: ApiError }>(
   'googleDrive/connect',
   async (_, { rejectWithValue }) => {
     const result = await googleDriveApi.getAuthUrl();
@@ -67,39 +60,33 @@ export const disconnectGoogleDrive = createAsyncThunk<
   { message: string; googleDriveConnected: boolean },
   void,
   { rejectValue: ApiError }
->(
-  'googleDrive/disconnect',
-  async (_, { rejectWithValue }) => {
-    const result = await googleDriveApi.disconnect();
+>('googleDrive/disconnect', async (_, { rejectWithValue }) => {
+  const result = await googleDriveApi.disconnect();
 
-    if (!result.success) {
-      return rejectWithValue(result.error);
-    }
-
-    return result.data;
+  if (!result.success) {
+    return rejectWithValue(result.error);
   }
-);
+
+  return result.data;
+});
 
 export const reconnectGoogleDrive = createAsyncThunk<
   { authUrl: string; state: string; message: string },
   void,
   { rejectValue: ApiError }
->(
-  'googleDrive/reconnect',
-  async (_, { rejectWithValue }) => {
-    const result = await googleDriveApi.reconnect();
+>('googleDrive/reconnect', async (_, { rejectWithValue }) => {
+  const result = await googleDriveApi.reconnect();
 
-    if (!result.success) {
-      return rejectWithValue(result.error);
-    }
-
-    // Redirect to Google OAuth
-    window.location.href = result.data.authUrl;
-
-    // This won't execute due to redirect, but TypeScript needs a return
-    return result.data;
+  if (!result.success) {
+    return rejectWithValue(result.error);
   }
-);
+
+  // Redirect to Google OAuth
+  window.location.href = result.data.authUrl;
+
+  // This won't execute due to redirect, but TypeScript needs a return
+  return result.data;
+});
 
 // Slice
 const googleDriveSlice = createSlice({
@@ -111,7 +98,7 @@ const googleDriveSlice = createSlice({
     },
     setConnected: (state, action: PayloadAction<boolean>) => {
       state.isConnected = action.payload;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -169,16 +156,29 @@ const googleDriveSlice = createSlice({
         state.isReconnecting = false;
         state.error = action.payload?.message ?? 'Google Drive 재연동에 실패했습니다';
       });
-  }
+  },
 });
 
 export const { clearError, setConnected } = googleDriveSlice.actions;
 
 // Selectors
-export const selectIsConnected = (state: { googleDrive: GoogleDriveState }) => state.googleDrive.isConnected;
-export const selectIsConnecting = (state: { googleDrive: GoogleDriveState }) => state.googleDrive.isConnecting;
-export const selectIsDisconnecting = (state: { googleDrive: GoogleDriveState }) => state.googleDrive.isDisconnecting;
-export const selectIsReconnecting = (state: { googleDrive: GoogleDriveState }) => state.googleDrive.isReconnecting;
-export const selectGoogleDriveError = (state: { googleDrive: GoogleDriveState }) => state.googleDrive.error;
+export const selectIsConnected = (state: { googleDrive: GoogleDriveState }) =>
+  state.googleDrive.isConnected;
+export const selectIsConnecting = (state: { googleDrive: GoogleDriveState }) =>
+  state.googleDrive.isConnecting;
+export const selectIsDisconnecting = (state: { googleDrive: GoogleDriveState }) =>
+  state.googleDrive.isDisconnecting;
+export const selectIsReconnecting = (state: { googleDrive: GoogleDriveState }) =>
+  state.googleDrive.isReconnecting;
+export const selectGoogleDriveError = (state: { googleDrive: GoogleDriveState }) =>
+  state.googleDrive.error;
+
+// Combined selector for backward compatibility (memoized)
+export const selectGoogleDrive = createSelector(
+  (state: { googleDrive: GoogleDriveState }) => state.googleDrive,
+  (googleDrive) => ({
+    googleDriveConnected: googleDrive.isConnected,
+  })
+);
 
 export default googleDriveSlice.reducer;

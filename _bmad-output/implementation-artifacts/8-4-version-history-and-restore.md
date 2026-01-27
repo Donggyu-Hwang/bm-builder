@@ -1,146 +1,463 @@
-# Story ${story_id}: ${title}
+# Story 8.4: 버전 히스토리 및 복원
 
-**Story ID:** ${story_id}
 **Epic:** Epic 8 - 실시간 협업 및 버전 관리
+**Story ID:** 8.4
 **Status:** ready-for-dev
-**Last Updated:** 2026-02-02
+**Created:** 2026-01-26
+**Last Updated:** 2026-01-26
 
 ---
 
-## User Story
+## 📋 User Story
 
-**As a** 예비 창업가,
-**I want** 팀원들과 실시간으로 협업하고 싶어서,
-**So that** 즉각적으로 피드백을 주고받을 수 있다.
-
----
-
-## Acceptance Criteria
-
-### AC1: WebSocket 연결
-**Given** 팀 문서에 여러 팀원이 접속했을 때
-**When** 문서가 열리면
-**Then** WebSocket 연결이-established된다:
-  - 각 사용자의 접속을 추적
-  - "2명이 문서를 보고 있습니다" presence 표시
-  - 접속 해제 시 즉시 반영
-
-### AC2: OT/CRDT 기반 동시 편집
-**When** 두 명 이상이 동시에 같은 문단을 편집하면
-**Then** OT (Operational Transformation) 또는 CRDT (Conflict-free Replicated Data Type)로 충돌 해결:
-  - Yjs (CRDT library) 또는 자체 구현
-  - 충돌 없이 실시간 동기화
-  - 각 사용자의 cursor 위치 표시
-
-### AC3: 실시간 댓글
-**When** 팀원이 댓글을 달면
-**Then** WebSocket을 통해 실시간으로 다른 팀원에게 전송된다:
-  - "새 댓글이 달렸습니다" 토스트
-  - 댓글 섹션이 즉시 업데이트됨
-
-### AC4: 버전 히스토리
-**When** 문서가 저장될 때마다
-**Then** 버전 snapshot이 생성된다:
-  - `document_versions` 테이블에 version_number 증가
-  - 전체 content 저장
-  - 타임스탬프 포함 (누가 누가, 어떤 내용 수정)
-
-### AC5: 버전 복원
-**And** 사용자가 "이전 버전으로 되돌리기"를 클릭하면
-**Then** 버전 비교 modal이 표시된다:
-  - 현재 버전 vs 이전 버전 비교 (side-by-side)
-  - "이 버전으로 되돌리기" / "취소" 버튼
+**As a** 팀원,
+**I want** 문서의 모든 버전을 보고 이전 버전으로 복원할 수 있길 원해서,
+**So that** 실수를 되돌리거나 변경 이력을 추적할 수 있다.
 
 ---
 
-## Technical Implementation
+## ✅ Acceptance Criteria (BDD Format)
 
-### WebSocket Service
+### AC1: Version Snapshot 생성
 
-**File:** \`backend/src/services/websocket.service.ts\`
+**Given** 팀원이 문서를 편집할 때
+**When** Changes가 save될 때마다
+**Then** Version snapshot이 생성된다:
+- Trigger: Manual save + Auto-save (5분 간격)
+- Storage: `document_versions` table
+- Content: Full document state (JSON)
+- Metadata: `{ versionNumber, savedBy, savedAt, changeSummary }`
 
-\`\`\`typescript
-import { WebSocketServer } from 'ws';
+### AC2: Version Retention Policy
 
-export class WebSocketService {
-  private wss: WebSocketServer;
+**And** Version retention policy이 적용된다:
+- Max versions: 100 versions per document
+- Cleanup: Old versions auto-deleted (FIFO)
+- Important versions: "Star"로 보존 가능
+- Archive: 1년 이상 된 versions를 cold storage
 
-  initialize(server: any) {
-    this.wss = new WebSocketServer({ server, path: '/ws' });
+### AC3: Version History UI
 
-    this.wss.on('connection', (ws, req) => {
-      const userId = this.extractUserId(req);
-      console.log(\`User \${userId} connected\`);
+**When** 사용자가 "버전 히스토리"를 열면
+**Then** Version timeline이 표시된다:
+- Visual: Vertical timeline
+- Each version: Avatar + Name + Timestamp + Summary
+- Diff indicator: "12 changes from previous"
+- Starred: ⭐ 표시
+- Actions: "Compare" | "Restore" | "Star"
 
-      // Send current state
-      ws.send(JSON.stringify({
-        type: 'connected',
-        userId,
-        currentUsers: this.getConnectedUsers()
-      }));
-    });
+### AC4: Version Diff 표시
 
-    this.wss.on('disconnect', (ws, req) => {
-      const userId = this.extractUserId(req);
-      console.log(\`User \${userId} disconnected\`);
-      this.broadcastPresence();
-    });
+**And** Version diff가 표시된다:
+- Side-by-side: Before vs After
+- Highlight: Changed text (red/green)
+- Sections: Collapsible sections
+- Character-level: Precise diff
+
+### AC5: Version 복원
+
+**Given** 사용자가 버전을 복원할 때
+**When** "Restore" 버튼을 클릭하면
+**Then** Confirmation modal이 표시된다:
+- "Version #12 (Jan 5, 2024)로 복원하시겠습니까?"
+- "현재 변경 사항이 덮어씌워집니다."
+- "복원" | "취소" 버튼
+
+**And** 복원 시 다음이 발생한다:
+- Document content: Restored from version
+- New version: Created as #13 "Restored from #12"
+- Notification: "Version #12로 복원되었습니다"
+- Undo: 가능 (Ctrl/Cmd + Z)
+
+### AC6: Version Star 기능
+
+**Given** Admin이 version을 star할 때
+**When** ⭐ star를 클릭하면
+**Then** Version이 보존됩니다:
+- Starred versions: Auto-cleanup 제외
+- Visual: ⭐ 아이콘 표시
+- Filter: "Starred만 보기" 옵션
+
+---
+
+## 🏗️ Developer Context
+
+### Version History Architecture
+
+**버전 히스토리는 문서의 모든 변경 사항을 추적하고 복원할 수 있는 기능입니다:**
+
+- **Snapshot-based:** 전체 문서 상태 저장
+- **Incremental Storage:** 변경 사항만 저장 (선택 사항)
+- **Diff Algorithm:** 두 버전 간 차이점 계산
+- **Rollback:** 이전 버전으로 1클릭 복원
+
+### 왜 Snapshot인가?
+
+**장점:**
+1. **Simple:** 복잡한 patch 연산 없이 전체 복원
+2. **Fast:** Diff 계산 없이 바로 복원
+3. **Reliable:** 데이터 무결성 보장
+4. **Audit:** Full history 추적 가능
+
+---
+
+## 🛠️ Technical Requirements
+
+### 1. Database: document_versions Table
+
+**Migration:** `backend/src/migrations/XXX_create_document_versions.sql`
+
+```sql
+CREATE TABLE IF NOT EXISTS document_versions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  version_number INTEGER NOT NULL,
+  content JSONB NOT NULL, -- Full document state
+  saved_by UUID NOT NULL REFERENCES profiles(id),
+  saved_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  change_summary TEXT,
+  is_starred BOOLEAN DEFAULT FALSE,
+
+  INDEX idx_document_versions_document_id (document_id),
+  INDEX idx_document_versions_saved_at (saved_at),
+  UNIQUE (document_id, version_number)
+);
+
+-- Trigger: Auto-increment version_number per document
+CREATE OR REPLACE FUNCTION increment_version_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.version_number := (
+    SELECT COALESCE(MAX(version_number), 0) + 1
+    FROM document_versions
+    WHERE document_id = NEW.document_id
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_increment_version
+BEFORE INSERT ON document_versions
+FOR EACH ROW
+EXECUTE FUNCTION increment_version_number();
+```
+
+### 2. Backend: Version Service
+
+**File:** `backend/src/services/version.service.ts`
+
+```typescript
+import { pool } from '../utils/db';
+
+export class VersionService {
+  // Create new version snapshot
+  async createVersion(documentId: string, userId: string, content: any, summary: string) {
+    const query = `
+      INSERT INTO document_versions (document_id, saved_by, content, change_summary)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [documentId, userId, JSON.stringify(content), summary]);
+
+    // Cleanup old versions (keep only 100)
+    await this.cleanupOldVersions(documentId);
+
+    return result.rows[0];
   }
 
-  broadcastPresence() {
-    const message = JSON.stringify({
-      type: 'presence',
-      users: this.getConnectedUsers()
-    });
+  // Get all versions for a document
+  async getVersions(documentId: string) {
+    const query = `
+      SELECT
+        dv.*,
+        p.full_name as saved_by_name,
+        p.avatar_url as saved_by_avatar
+      FROM document_versions dv
+      JOIN profiles p ON dv.saved_by = p.id
+      WHERE dv.document_id = $1
+      ORDER BY dv.saved_at DESC
+      LIMIT 100
+    `;
 
-    this.wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
-    });
+    const result = await pool.query(query, [documentId]);
+    return result.rows;
   }
 
-  private extractUserId(req: any): string {
-    // JWT 토큰에서 user_id 추출
-    const token = req.headers['sec-websocket-protocol'];
-    // ... implementation
+  // Restore document to specific version
+  async restoreVersion(versionId: string, userId: string) {
+    const query = `
+      WITH version_data AS (
+        SELECT document_id, content, version_number
+        FROM document_versions
+        WHERE id = $1
+      )
+      UPDATE documents
+      SET content = version_data.content,
+          updated_at = NOW()
+      FROM version_data
+      WHERE documents.id = version_data.document_id
+      RETURNING documents.id, version_data.version_number as restored_from_version
+    `;
+
+    const result = await pool.query(query, [versionId]);
+
+    // Create new version marking the restore
+    const { id: documentId, restored_from_version } = result.rows[0];
+    await this.createVersion(
+      documentId,
+      userId,
+      result.rows[0].content,
+      `Restored from version #${restored_from_version}`
+    );
+
+    return result.rows[0];
   }
 
-  private getConnectedUsers(): string[] {
-    // 현재 접속된 사용자 목록 반환
-    // ... implementation
-    return [];
+  // Star/unstar version
+  async toggleStar(versionId: string, userId: string) {
+    const query = `
+      UPDATE document_versions
+      SET is_starred = NOT is_starred
+      WHERE id = $1 AND saved_by = $2
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [versionId, userId]);
+    return result.rows[0];
+  }
+
+  // Cleanup old versions (keep starred and recent 100)
+  private async cleanupOldVersions(documentId: string) {
+    const query = `
+      DELETE FROM document_versions
+      WHERE document_id = $1
+        AND id NOT IN (
+          SELECT id FROM document_versions
+          WHERE document_id = $1
+            AND (is_starred = true OR saved_at > NOW() - INTERVAL '1 year')
+          ORDER BY saved_at DESC
+          LIMIT 100
+        )
+    `;
+
+    await pool.query(query, [documentId]);
   }
 }
 
-export const webSocketService = new WebSocketService();
-\`\`\`
+export const versionService = new VersionService();
+```
 
-### CRDT Implementation
+### 3. Backend: API Routes
 
-**Library:** Yjs (CRDT library)
+**File:** `backend/src/routes/v1/versions.routes.ts`
 
-**Installation:**
-\`\`\`bash
-npm install yjs y-websocket y-provider\n\`\`\`
+```typescript
+import { Router } from 'express';
+import { versionService } from '../services/version.service';
+import { authMiddleware } from '../middleware/auth.middleware';
 
-**File:** \`frontend/src/components/collaboration/CollaborativeEditor.tsx\`\`
+const router = Router();
 
-\`\`\`typescript
-import * as Y from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
-import { useSnackbar } from 'notistack';
+// GET /api/v1/versions/:documentId - Get all versions
+router.get('/:documentId', authMiddleware, async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const versions = await versionService.getVersions(documentId);
+    res.json(versions);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch versions' });
+  }
+});
 
-export const CollaborativeEditor = ({ documentId }) => {  const { enqueueSnackbar } = useSnackbar();
-  const [yDoc] = Y.Doc.fromString('{\\"root\\":{\\"text\\":\\"Hello\\"}}');
+// POST /api/v1/versions/:documentId - Create new version
+router.post('/:documentId', authMiddleware, async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const userId = req.user!.id;
+    const { content, summary } = req.body;
 
-  // ... implementation
+    const version = await versionService.createVersion(documentId, userId, content, summary);
+    res.json(version);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create version' });
+  }
+});
+
+// POST /api/v1/versions/:versionId/restore - Restore version
+router.post('/:versionId/restore', authMiddleware, async (req, res) => {
+  try {
+    const { versionId } = req.params;
+    const userId = req.user!.id;
+
+    const result = await versionService.restoreVersion(versionId, userId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to restore version' });
+  }
+});
+
+// PUT /api/v1/versions/:versionId/star - Toggle star
+router.put('/:versionId/star', authMiddleware, async (req, res) => {
+  try {
+    const { versionId } = req.params;
+    const userId = req.user!.id;
+
+    const version = await versionService.toggleStar(versionId, userId);
+    res.json(version);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to toggle star' });
+  }
+});
+
+export default router;
+```
+
+### 4. Frontend: Version History Component
+
+**File:** `frontend/src/components/documents/VersionHistory.tsx`
+
+```typescript
+import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar,
+  Typography,
+  IconButton,
+} from '@mui/material';
+import { Star, StarBorder, Restore, Compare } from '@mui/icons-material';
+
+interface Version {
+  id: string;
+  version_number: number;
+  saved_at: string;
+  saved_by_name: string;
+  saved_by_avatar: string;
+  change_summary: string;
+  is_starred: boolean;
+}
+
+interface VersionHistoryProps {
+  documentId: string;
+  onClose: () => void;
+}
+
+export const VersionHistory: React.FC<VersionHistoryProps> = ({ documentId, onClose }) => {
+  const [versions, setVersions] = useState<Version[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
+
+  useEffect(() => {
+    fetchVersions();
+  }, [documentId]);
+
+  const fetchVersions = async () => {
+    const response = await fetch(`/api/v1/versions/${documentId}`);
+    const data = await response.json();
+    setVersions(data);
+  };
+
+  const handleRestore = async (versionId: string) => {
+    if (!confirm('정말 이 버전으로 복원하시겠습니까? 현재 변경 사항이 덮어씌워집니다.')) {
+      return;
+    }
+
+    await fetch(`/api/v1/versions/${versionId}/restore`, { method: 'POST' });
+    alert('버전이 복원되었습니다.');
+    window.location.reload();
+  };
+
+  const handleToggleStar = async (versionId: string) => {
+    await fetch(`/api/v1/versions/${versionId}/star`, { method: 'PUT' });
+    fetchVersions();
+  };
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>버전 히스토리</DialogTitle>
+      <DialogContent>
+        <List>
+          {versions.map((version) => (
+            <ListItem key={version.id}>
+              <ListItemAvatar>
+                <Avatar src={version.saved_by_avatar}>
+                  {version.saved_by_name[0]}
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={`Version #${version.version_number} - ${version.change_summary}`}
+                secondary={`${version.saved_by_name} • ${new Date(version.saved_at).toLocaleString()}`}
+              />
+              <IconButton onClick={() => handleToggleStar(version.id)}>
+                {version.is_starred ? <Star /> : <StarBorder />}
+              </IconButton>
+              <IconButton onClick={() => handleRestore(version.id)}>
+                <Restore />
+              </IconButton>
+            </ListItem>
+          ))}
+        </List>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>닫기</Button>
+      </DialogActions>
+    </Dialog>
+  );
 };
-\`\`\`
+```
 
 ---
 
-**Story Status:** ✅ Ready for Development
-**Estimated Complexity:** Very High (WebSocket, CRDT, 충돌 해결)
-**Recommended Developer:** Dev agent
-**Dependencies:** Epic 1 (Authentication), Epic 7 (Team Collaboration)
+## 📝 Tasks/Subtasks
+
+### Backend
+- [ ] `document_versions` table migration 작성
+- [ ] Version service 구현 (생성, 조회, 복원, star)
+- [ ] API routes 구현
+- [ ] Auto-version trigger on document save
+- [ ] Old versions cleanup job
+
+### Frontend
+- [ ] Version history dialog component
+- [ ] Version timeline UI
+- [ ] Restore confirmation modal
+- [ ] Star toggle UI
+- [ ] Diff viewer (side-by-side comparison)
+- [ ] Version history 버튼 추가
+
+### Testing
+- [ ] Version creation 테스트
+- [ ] Restore flow 테스트
+- [ ] Star 기능 테스트
+- [ ] Cleanup policy 테스트
+
+---
+
+## 🎯 Success Metrics
+
+- **Version 저장 성공률:** 99.9% 이상
+- **Restore 속도:** 1초 이내
+- **Storage efficiency:** 100 versions/document 이하 유지
+
+---
+
+## 🔗 Dependencies
+
+- **Prerequisites:** Story 8.3 (실시간 댓글)
+- **Related Stories:** Story 8.5 (Conflict Resolution)
+
+---
+
+## 💡 Notes
+
+- Version snapshot은 문서 전체 상태 저장
+- Auto-save는 5분 간격, manual save는 즉시
+- 복원 후 새 버전이 자동 생성 (복원 이력 추적)
+- Star된 버전은 auto-cleanup 제외

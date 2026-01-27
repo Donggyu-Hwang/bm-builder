@@ -1,16 +1,23 @@
-import { Router, Response } from 'express';
+import { Router, Response, Request } from 'express';
 import { googleOAuthService } from '../../services/googleOAuth.service';
-import { requireAuth, AuthRequest } from '../../middleware/auth.middleware';
+import { requireAuth, AuthenticatedUser } from '../../middleware/auth.middleware';
 import pool from '../../utils/db';
 import * as crypto from 'crypto';
 
 const router = Router();
 
+// Extend Express Request type to include user
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: AuthenticatedUser;
+  }
+}
+
 /**
  * GET /api/v1/google-drive/auth-url
  * Get OAuth authorization URL for Google Drive
  */
-router.get('/auth-url', requireAuth, async (_req: AuthRequest, res: Response) => {
+router.get('/auth-url', requireAuth, async (_req: Request, res: Response) => {
   try {
     // Use cryptographically secure random generation for OAuth state
     const state = crypto.randomBytes(32).toString('hex');
@@ -18,7 +25,7 @@ router.get('/auth-url', requireAuth, async (_req: AuthRequest, res: Response) =>
 
     res.json({
       success: true,
-      data: { authUrl, state }
+      data: { authUrl, state },
     });
   } catch (error) {
     console.error('Error generating auth URL:', error);
@@ -26,8 +33,8 @@ router.get('/auth-url', requireAuth, async (_req: AuthRequest, res: Response) =>
       success: false,
       error: {
         code: 'OAUTH_ERROR',
-        message: 'OAuth URL 생성에 실패했습니다'
-      }
+        message: 'OAuth URL 생성에 실패했습니다',
+      },
     });
   }
 });
@@ -36,18 +43,18 @@ router.get('/auth-url', requireAuth, async (_req: AuthRequest, res: Response) =>
  * POST /api/v1/google-drive/callback
  * Handle OAuth callback and save tokens
  */
-router.post('/callback', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/callback', requireAuth, async (req: Request, res: Response) => {
   try {
     const { code } = req.body;
-    const userId = req.user!.id;
+    const userId = (req.user as AuthenticatedUser).id;
 
     if (!code) {
       return res.status(400).json({
         success: false,
         error: {
           code: 'INVALID_CODE',
-          message: 'OAuth 코드가 없습니다'
-        }
+          message: 'OAuth 코드가 없습니다',
+        },
       });
     }
 
@@ -67,8 +74,8 @@ router.post('/callback', requireAuth, async (req: AuthRequest, res: Response) =>
       data: {
         message: 'Google Drive가 연동되었습니다! 🎉',
         googleDriveConnected: true,
-        scanStarted: false // Will be true in Story 2.2
-      }
+        scanStarted: false, // Will be true in Story 2.2
+      },
     });
   } catch (error: unknown) {
     console.error('OAuth callback error:', error);
@@ -77,13 +84,13 @@ router.post('/callback', requireAuth, async (req: AuthRequest, res: Response) =>
     const err = error as { code?: number; errors?: Array<{ reason?: string }> };
 
     // Check for quota exceeded (429) or other Google API errors
-    if (err.code === 429 || (err.errors?.[0]?.reason === 'quotaExceeded')) {
+    if (err.code === 429 || err.errors?.[0]?.reason === 'quotaExceeded') {
       return res.status(429).json({
         success: false,
         error: {
           code: 'QUOTA_EXCEEDED',
-          message: 'Google API quota를 초과했습니다. 1시간 후에 다시 시도해주세요.'
-        }
+          message: 'Google API quota를 초과했습니다. 1시간 후에 다시 시도해주세요.',
+        },
       });
     }
 
@@ -91,8 +98,8 @@ router.post('/callback', requireAuth, async (req: AuthRequest, res: Response) =>
       success: false,
       error: {
         code: 'OAUTH_FAILED',
-        message: 'OAuth 연동에 실패했습니다'
-      }
+        message: 'OAuth 연동에 실패했습니다',
+      },
     });
   }
 });
@@ -101,20 +108,19 @@ router.post('/callback', requireAuth, async (req: AuthRequest, res: Response) =>
  * GET /api/v1/google-drive/status
  * Check Google Drive connection status
  */
-router.get('/status', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/status', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = (req.user as AuthenticatedUser).id;
 
-    const { rows } = await pool.query(
-      'SELECT google_drive_connected FROM profiles WHERE id = $1',
-      [userId]
-    );
+    const { rows } = await pool.query('SELECT google_drive_connected FROM profiles WHERE id = $1', [
+      userId,
+    ]);
 
     res.json({
       success: true,
       data: {
-        googleDriveConnected: rows[0]?.google_drive_connected || false
-      }
+        googleDriveConnected: rows[0]?.google_drive_connected || false,
+      },
     });
   } catch (error) {
     console.error('Error checking status:', error);
@@ -122,8 +128,8 @@ router.get('/status', requireAuth, async (req: AuthRequest, res: Response) => {
       success: false,
       error: {
         code: 'STATUS_CHECK_FAILED',
-        message: '연동 상태 확인에 실패했습니다'
-      }
+        message: '연동 상태 확인에 실패했습니다',
+      },
     });
   }
 });
@@ -132,9 +138,9 @@ router.get('/status', requireAuth, async (req: AuthRequest, res: Response) => {
  * DELETE /api/v1/google-drive/disconnect
  * Disconnect Google Drive (delete tokens and CASCADE delete all user data)
  */
-router.delete('/disconnect', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/disconnect', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = (req.user as AuthenticatedUser).id;
 
     await googleOAuthService.deleteTokens(userId);
 
@@ -142,8 +148,8 @@ router.delete('/disconnect', requireAuth, async (req: AuthRequest, res: Response
       success: true,
       data: {
         message: 'Google Drive 연동이 해제되었습니다.',
-        googleDriveConnected: false
-      }
+        googleDriveConnected: false,
+      },
     });
   } catch (error) {
     console.error('Error disconnecting:', error);
@@ -151,8 +157,8 @@ router.delete('/disconnect', requireAuth, async (req: AuthRequest, res: Response
       success: false,
       error: {
         code: 'DISCONNECT_FAILED',
-        message: '연동 해제에 실패했습니다'
-      }
+        message: '연동 해제에 실패했습니다',
+      },
     });
   }
 });
@@ -161,7 +167,7 @@ router.delete('/disconnect', requireAuth, async (req: AuthRequest, res: Response
  * POST /api/v1/google-drive/reconnect
  * Reconnect Google Drive (get new auth URL for existing user)
  */
-router.post('/reconnect', requireAuth, async (_req: AuthRequest, res: Response) => {
+router.post('/reconnect', requireAuth, async (_req: Request, res: Response) => {
   try {
     // Use cryptographically secure random generation for OAuth state
     const state = crypto.randomBytes(32).toString('hex');
@@ -172,8 +178,8 @@ router.post('/reconnect', requireAuth, async (_req: AuthRequest, res: Response) 
       data: {
         authUrl,
         state,
-        message: 'Google Drive 재연동 URL이 생성되었습니다.'
-      }
+        message: 'Google Drive 재연동 URL이 생성되었습니다.',
+      },
     });
   } catch (error) {
     console.error('Error generating reconnect URL:', error);
@@ -181,8 +187,8 @@ router.post('/reconnect', requireAuth, async (_req: AuthRequest, res: Response) 
       success: false,
       error: {
         code: 'RECONNECT_ERROR',
-        message: '재연동 URL 생성에 실패했습니다'
-      }
+        message: '재연동 URL 생성에 실패했습니다',
+      },
     });
   }
 });

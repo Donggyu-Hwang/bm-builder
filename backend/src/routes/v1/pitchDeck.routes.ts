@@ -3,9 +3,9 @@
  * API endpoints for pitch deck generation and slide management
  */
 
-import { Router, Response } from 'express';
+import { Router, Response, Request } from 'express';
 import { pitchDeckService } from '../../services/pitchDeck.service';
-import { requireAuth, AuthRequest } from '../../middleware/auth.middleware';
+import { requireAuth } from '../../middleware/auth.middleware';
 
 const router = Router();
 
@@ -13,18 +13,16 @@ const router = Router();
  * POST /api/v1/pitch-deck/start
  * Start pitch deck generation
  */
-router.post('/start', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/start', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) {
+    const user = req.user;
+    if (!user || !user.id) {
       return res.status(401).json({
         success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'User not authenticated',
-        },
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
       });
     }
+    const userId = user.id;
 
     const { answers } = req.body;
 
@@ -66,9 +64,15 @@ router.post('/start', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/v1/pitch-deck/:documentId/slides
  * Get all slides for a pitch deck
  */
-router.get('/:documentId/slides', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/:documentId/slides', requireAuth, async (req: Request, res: Response) => {
   try {
     const documentId = req.params.documentId;
+    if (!documentId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ID', message: 'Document ID is required' },
+      });
+    }
     const slides = await pitchDeckService.getSlides(documentId);
 
     res.json({
@@ -91,9 +95,15 @@ router.get('/:documentId/slides', requireAuth, async (req: AuthRequest, res: Res
  * PUT /api/v1/pitch-deck/slides/:slideId
  * Update slide content
  */
-router.put('/slides/:slideId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.put('/slides/:slideId', requireAuth, async (req: Request, res: Response) => {
   try {
     const slideId = req.params.slideId;
+    if (!slideId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ID', message: 'Slide ID is required' },
+      });
+    }
     const { title, content, notes } = req.body;
 
     await pitchDeckService.updateSlide(slideId, { title, content, notes });
@@ -120,9 +130,15 @@ router.put('/slides/:slideId', requireAuth, async (req: AuthRequest, res: Respon
  * PUT /api/v1/pitch-deck/slides/:slideId/reorder
  * Reorder slide (change slide number)
  */
-router.put('/slides/:slideId/reorder', requireAuth, async (req: AuthRequest, res: Response) => {
+router.put('/slides/:slideId/reorder', requireAuth, async (req: Request, res: Response) => {
   try {
     const slideId = req.params.slideId;
+    if (!slideId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ID', message: 'Slide ID is required' },
+      });
+    }
     const { new_order } = req.body;
 
     if (typeof new_order !== 'number') {
@@ -159,9 +175,15 @@ router.put('/slides/:slideId/reorder', requireAuth, async (req: AuthRequest, res
  * DELETE /api/v1/pitch-deck/slides/:slideId
  * Delete a slide
  */
-router.delete('/slides/:slideId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/slides/:slideId', requireAuth, async (req: Request, res: Response) => {
   try {
     const slideId = req.params.slideId;
+    if (!slideId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ID', message: 'Slide ID is required' },
+      });
+    }
     await pitchDeckService.deleteSlide(slideId);
 
     res.json({

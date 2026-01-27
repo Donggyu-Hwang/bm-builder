@@ -39,7 +39,7 @@ export class PitchDeckService {
     const documentId = docRows[0].id;
 
     // Generate slides in background
-    this.generateSlidesInBackground(documentId, params.answers).catch((error) => {
+    this.generateSlidesInBackground(documentId, params.userId, params.answers).catch((error) => {
       console.error('Pitch deck generation failed:', error);
       this.updateDocumentStatus(documentId, 'failed', error.message);
     });
@@ -52,6 +52,7 @@ export class PitchDeckService {
    */
   private async generateSlidesInBackground(
     documentId: string,
+    userId: string,
     answers: Record<string, string>
   ): Promise<void> {
     try {
@@ -64,11 +65,7 @@ export class PitchDeckService {
 
       // Search for similar documents
       await this.updateProgress(documentId, 30, '관련 문서 검색 중...');
-      const similarDocs = await ragService.searchSimilarDocuments(
-        documentId.split('-')[0], // Extract userId from documentId (simplified)
-        keywords,
-        3
-      );
+      const similarDocs = await ragService.searchSimilarDocuments(userId, keywords, 3);
       const context = ragService.buildContext(similarDocs);
 
       await this.updateProgress(documentId, 40, '문서 검색 완료');
@@ -129,10 +126,7 @@ Tone: Professional, confident, persuasive`;
   /**
    * Build user prompt from answers and context
    */
-  private buildUserPrompt(
-    answers: Record<string, string>,
-    context: string
-  ): string {
+  private buildUserPrompt(answers: Record<string, string>, context: string): string {
     const answersText = Object.entries(answers)
       .map(([questionNum, answer]) => `Q${questionNum}: ${answer}`)
       .join('\n\n');
@@ -173,28 +167,30 @@ Make sure to create exactly 10-15 slides covering all required sections.`;
   /**
    * Parse generated content and save slides
    */
-  private async parseAndSaveSlides(
-    documentId: string,
-    content: string
-  ): Promise<void> {
+  private async parseAndSaveSlides(documentId: string, content: string): Promise<void> {
     // Split by slide markers
     const slideMarkers = content.split(/---+\n## SLIDE \d+:/);
 
     // First slide (before first marker)
-    if (slideMarkers.length > 0 && slideMarkers[0].trim()) {
-      const firstSlide = this.extractSlideInfo(slideMarkers[0], 'Title & Tagline');
-      if (firstSlide) {
-        await this.saveSlide(documentId, 1, firstSlide.title, firstSlide.content);
+    if (slideMarkers.length > 0) {
+      const firstMarker = slideMarkers[0];
+      if (firstMarker && firstMarker.trim()) {
+        const firstSlide = this.extractSlideInfo(firstMarker, 'Title & Tagline');
+        if (firstSlide) {
+          await this.saveSlide(documentId, 1, firstSlide.title, firstSlide.content);
+        }
       }
     }
 
     // Remaining slides
     for (let i = 1; i < slideMarkers.length; i++) {
       const slideContent = slideMarkers[i];
-      const slideInfo = this.extractSlideInfo(slideContent, `Slide ${i + 1}`);
+      if (slideContent) {
+        const slideInfo = this.extractSlideInfo(slideContent, `Slide ${i + 1}`);
 
-      if (slideInfo) {
-        await this.saveSlide(documentId, i + 1, slideInfo.title, slideInfo.content);
+        if (slideInfo) {
+          await this.saveSlide(documentId, i + 1, slideInfo.title, slideInfo.content);
+        }
       }
     }
   }
@@ -206,7 +202,7 @@ Make sure to create exactly 10-15 slides covering all required sections.`;
     content: string,
     defaultTitle: string
   ): { title: string; content: string } | null {
-    const lines = content.split('\n').filter(line => line.trim());
+    const lines = content.split('\n').filter((line) => line.trim());
 
     if (lines.length === 0) {
       return null;
@@ -216,15 +212,18 @@ Make sure to create exactly 10-15 slides covering all required sections.`;
     let title = defaultTitle;
     let contentStart = 0;
 
-    const firstLine = lines[0].trim();
-    if (firstLine.startsWith('**') && firstLine.endsWith('**')) {
-      title = firstLine.replace(/\*\*/g, '').trim();
-      contentStart = 1;
+    const firstLine = lines[0];
+    if (firstLine) {
+      const trimmedLine = firstLine.trim();
+      if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+        title = trimmedLine.replace(/\*\*/g, '').trim();
+        contentStart = 1;
+      }
     }
 
-    const content = lines.slice(contentStart).join('\n').trim();
+    const slideContent = lines.slice(contentStart).join('\n').trim();
 
-    return { title, content: content || '내용 준비 중...' };
+    return { title, content: slideContent || '내용 준비 중...' };
   }
 
   /**

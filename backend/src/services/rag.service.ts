@@ -26,10 +26,7 @@ export class RAGService {
       .split(/\s+/)
       .filter((word) => word.length > 1)
       .filter(
-        (word) =>
-          !['있다', '이다', '하다', '되다', '같다', '없다', '위해', '통해'].includes(
-            word
-          )
+        (word) => !['있다', '이다', '하다', '되다', '같다', '없다', '위해', '통해'].includes(word)
       );
 
     // Remove duplicates and return top 10
@@ -68,11 +65,7 @@ export class RAGService {
         LIMIT $${keywords.length + 2}
       `;
 
-      const params = [
-        userId,
-        ...keywords.slice(0, 5).map((k) => `%${k}%`),
-        limit,
-      ];
+      const params = [userId, ...keywords.slice(0, 5).map((k) => `%${k}%`), limit];
 
       const { rows } = await pool.query(query, params);
 
@@ -104,35 +97,6 @@ ${doc.content.substring(0, 1000)}...
 `
       )
       .join('\n');
-  }
-
-  /**
-   * Create a simple embedding from keywords (placeholder)
-   * In production, use OpenAI text-embedding-3-small or similar
-   */
-  private createSimpleEmbedding(keywords: string[]): number[] {
-    const embeddingSize = 1536; // OpenAI embedding size
-    const embedding = new Array(embeddingSize).fill(0);
-
-    keywords.forEach((keyword, i) => {
-      const hash = this.simpleHash(keyword);
-      embedding[i % embeddingSize] = (hash % 100) / 100;
-    });
-
-    return embedding;
-  }
-
-  /**
-   * Simple hash function for keyword embedding
-   */
-  private simpleHash(str: string): number {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash;
-    }
-    return Math.abs(hash);
   }
 }
 

@@ -3,9 +3,10 @@
  * Represents the completion of a document workflow
  */
 
+import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 
-export default function EndNode({ data }: NodeProps) {
+function EndNode({ data }: NodeProps) {
   return (
     <div className="px-6 py-4 shadow-md rounded-full bg-green-100 border-2 border-green-500">
       <Handle type="target" position={Position.Top} className="w-3 h-3" />
@@ -13,3 +14,5 @@ export default function EndNode({ data }: NodeProps) {
     </div>
   );
 }
+
+export default memo(EndNode);

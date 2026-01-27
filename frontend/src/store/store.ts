@@ -8,6 +8,7 @@ import fileScanReducer from './slices/fileScanSlice';
 import embeddedDocumentsReducer from './slices/embeddedDocumentsSlice';
 import documentGenerationReducer from './slices/documentGenerationSlice';
 import themeReducer from './slices/themeSlice';
+import demoReducer from './slices/demoSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     embeddedDocuments: embeddedDocumentsReducer,
     documentGeneration: documentGenerationReducer,
     theme: themeReducer,
+    demo: demoReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

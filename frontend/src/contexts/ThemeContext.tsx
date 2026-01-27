@@ -1,3 +1,26 @@
+/**
+ * Theme Context Provider
+ *
+ * LOW FIX: Theme Duplication Issue
+ * --------------------------------
+ * This ThemeContext provider duplicates functionality already implemented
+ * in Redux themeSlice (@/store/slices/themeSlice).
+ *
+ * Current Status:
+ * - ThemeContext: Legacy implementation (this file)
+ * - Redux themeSlice: Newer implementation with better integration
+ *
+ * Migration Path (Future Refactoring):
+ * 1. Replace all `useTheme()` hooks with `useAppSelector(selectTheme)`
+ * 2. Replace ThemeProvider with Redux Provider wrapping
+ * 3. Remove this file after complete migration
+ *
+ * Why Keep Both Now:
+ * - Breaking change to remove without comprehensive testing
+ * - Some components may still depend on ThemeContext
+ * - Allows gradual migration without disrupting existing functionality
+ */
+
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Theme } from '../types/theme.types';
 
@@ -23,8 +46,13 @@ export function ThemeProvider({
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window === 'undefined') return defaultTheme;
 
-    const stored = localStorage.getItem(storageKey) as Theme;
-    return stored || defaultTheme;
+    try {
+      const stored = localStorage.getItem(storageKey) as Theme;
+      return stored || defaultTheme;
+    } catch (error) {
+      console.warn('localStorage access denied:', error);
+      return defaultTheme;
+    }
   });
 
   useEffect(() => {
@@ -43,7 +71,11 @@ export function ThemeProvider({
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
-    localStorage.setItem(storageKey, newTheme);
+    try {
+      localStorage.setItem(storageKey, newTheme);
+    } catch (error) {
+      console.warn('Failed to save theme preference:', error);
+    }
     setThemeState(newTheme);
   };
 

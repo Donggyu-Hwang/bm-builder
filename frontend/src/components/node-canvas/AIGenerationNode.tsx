@@ -3,9 +3,10 @@
  * Represents AI-generated content with provider information
  */
 
+import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 
-export default function AIGenerationNode({ data }: NodeProps) {
+function AIGenerationNode({ data }: NodeProps) {
   return (
     <div className="px-6 py-4 shadow-md rounded-lg border-2 bg-purple-100 border-purple-500 transform rotate-45 min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3" />
@@ -17,3 +18,5 @@ export default function AIGenerationNode({ data }: NodeProps) {
     </div>
   );
 }
+
+export default memo(AIGenerationNode);

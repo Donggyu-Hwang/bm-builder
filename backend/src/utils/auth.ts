@@ -48,10 +48,47 @@ export function verifyToken(token: string): JWTPayload | null {
 // Verify refresh token
 export function verifyRefreshToken(token: string): { userId: string } | null {
   try {
-    return jwt.verify(
-      token,
-      getRefreshSecret()
-    ) as { userId: string };
+    return jwt.verify(token, getRefreshSecret()) as { userId: string };
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Validate and get JWT access secret
+ * CRITICAL FIX: Centralized validation to prevent duplication
+ * Used by WebSocket authentication
+ */
+export function getJWTAccessSecret(): string {
+  const secret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
+
+  if (!secret) {
+    throw new Error('JWT_ACCESS_SECRET or JWT_SECRET environment variable is required');
+  }
+
+  // Reject placeholder values
+  const invalidPlaceholders = ['your-secret-key', 'your-jwt-secret', 'secret', 'change-me'];
+
+  const normalizedSecret = secret.toLowerCase().trim();
+  if (invalidPlaceholders.some((placeholder) => normalizedSecret.includes(placeholder))) {
+    throw new Error('JWT_ACCESS_SECRET must be changed from the default placeholder value');
+  }
+
+  // Require minimum length for security
+  if (secret.length < 32) {
+    throw new Error('JWT_ACCESS_SECRET must be at least 32 characters long');
+  }
+
+  return secret;
+}
+
+/**
+ * Verify JWT access token (for WebSocket authentication)
+ */
+export function verifyAccessToken(token: string): JWTPayload | null {
+  try {
+    const secret = getJWTAccessSecret();
+    return jwt.verify(token, secret) as JWTPayload;
   } catch (error) {
     return null;
   }

@@ -5,7 +5,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { generatedDocumentsApi, GeneratedDocument } from '../../api/generatedDocumentsApi';
+import { useSelector } from 'react-redux';
+import { generatedDocumentsApi, GeneratedDocument } from '../api/generatedDocumentsApi';
+import { usePresence } from '../hooks/usePresence';
+import { PresenceIndicator } from '../components/collaboration/PresenceIndicator';
+import { DemoSignupModal } from '../components/demo/DemoSignupModal';
 
 export const DocumentEditPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +19,16 @@ export const DocumentEditPage = () => {
   const [title, setTitle] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+
+  // Demo mode check
+  const isDemoMode = useSelector((state: any) => state.demo.isDemoMode);
+
+  // Real-time presence
+  const { connected, users } = usePresence({
+    documentId: id || '',
+    enabled: !!id,
+  });
 
   // Load document
   useEffect(() => {
@@ -65,6 +79,13 @@ export const DocumentEditPage = () => {
   };
 
   const handleSave = async () => {
+    // Demo mode check
+    if (isDemoMode) {
+      alert('데모 모드에서는 저장이 불가능합니다. 가입 후 이용해주세요!');
+      setShowSignupModal(true);
+      return;
+    }
+
     if (!id) return;
 
     setSaveStatus('saving');
@@ -114,13 +135,14 @@ export const DocumentEditPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">문서 편집</h1>
           <p className="text-sm text-gray-500 mt-1">
-            자동 저장: {saveStatus === 'saved' && lastSaved
+            자동 저장:{' '}
+            {saveStatus === 'saved' && lastSaved
               ? `${lastSaved.toLocaleTimeString('ko-KR')}에 저장됨`
               : saveStatus === 'saving'
-              ? '저장 중...'
-              : saveStatus === 'error'
-              ? '저장 실패'
-              : '대기 중'}
+                ? '저장 중...'
+                : saveStatus === 'error'
+                  ? '저장 실패'
+                  : '대기 중'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -150,6 +172,11 @@ export const DocumentEditPage = () => {
             {saveStatus === 'saving' ? '저장 중...' : '저장'}
           </button>
         </div>
+      </div>
+
+      {/* Presence Indicator */}
+      <div className="mb-4">
+        <PresenceIndicator connected={connected} users={users} />
       </div>
 
       {/* Document Info */}
@@ -182,7 +209,8 @@ export const DocumentEditPage = () => {
 
         <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            💡 <strong>팁:</strong> 이 에디터는 MVP 버전입니다. WYSIWYG 에디터(볼드, 이탤릭, 리스트 등)는 향후 업데이트에서 지원될 예정입니다.
+            💡 <strong>팁:</strong> 이 에디터는 MVP 버전입니다. WYSIWYG 에디터(볼드, 이탤릭, 리스트
+            등)는 향후 업데이트에서 지원될 예정입니다.
           </p>
         </div>
       </div>
@@ -191,8 +219,8 @@ export const DocumentEditPage = () => {
       <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">인포그래픽</h3>
         <p className="text-gray-500 text-sm">
-          인포그래픽 편집 기능은 Story 3.3에서 생성된 차트/이미지를 관리하는 기능입니다.
-          현재 MVP에서는 텍스트 편집만 지원하며, 이미지 편집 기능은 향후 업데이트 예정입니다.
+          인포그래픽 편집 기능은 Story 3.3에서 생성된 차트/이미지를 관리하는 기능입니다. 현재
+          MVP에서는 텍스트 편집만 지원하며, 이미지 편집 기능은 향후 업데이트 예정입니다.
         </p>
       </div>
 
@@ -200,10 +228,13 @@ export const DocumentEditPage = () => {
       <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">버전 히스토리</h3>
         <p className="text-gray-500 text-sm">
-          버전 히스토리 기능은 향후 업데이트에서 지원될 예정입니다.
-          최대 10개 버전이 자동으로 저장됩니다.
+          버전 히스토리 기능은 향후 업데이트에서 지원될 예정입니다. 최대 10개 버전이 자동으로
+          저장됩니다.
         </p>
       </div>
+
+      {/* Demo Signup Modal */}
+      <DemoSignupModal open={showSignupModal} onClose={() => setShowSignupModal(false)} />
     </div>
   );
 };

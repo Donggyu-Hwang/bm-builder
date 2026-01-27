@@ -4,9 +4,10 @@
  * Story 6.2: Enhanced with visual feedback and custom styling
  */
 
+import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 
-export default function SectionNode({ data, selected }: NodeProps) {
+function SectionNode({ data, selected }: NodeProps) {
   const statusColors: Record<string, string> = {
     완료: 'bg-blue-100 border-blue-500 text-blue-800',
     진행중: 'bg-yellow-100 border-yellow-500 text-yellow-800',
@@ -54,9 +55,7 @@ export default function SectionNode({ data, selected }: NodeProps) {
       {/* Node Content */}
       <div className="text-sm space-y-1">
         <div className="flex items-center gap-2">
-          <span className="px-2 py-1 text-xs font-medium rounded bg-white/50">
-            {data.status}
-          </span>
+          <span className="px-2 py-1 text-xs font-medium rounded bg-white/50">{data.status}</span>
           <span className="text-xs">{data.wordCount?.toLocaleString()}자</span>
         </div>
         {data.lastEdited && (
@@ -79,3 +78,5 @@ export default function SectionNode({ data, selected }: NodeProps) {
     </div>
   );
 }
+
+export default memo(SectionNode);

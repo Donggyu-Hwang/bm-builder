@@ -72,7 +72,7 @@ export class PPTXGenerationService {
 
 `;
 
-    slides.forEach((slide, index) => {
+    slides.forEach((slide, _index) => {
       content += `
 [Slide ${slide.slide_number}: ${slide.title}]
 
@@ -97,7 +97,9 @@ https://bm-builder.com
    * Get filename for PPTX download
    */
   getPPTXFileName(title: string): string {
-    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const isoString = new Date().toISOString();
+    const datePart = isoString.split('T')[0];
+    const dateStr = datePart ? datePart.replace(/-/g, '') : '';
     return `${title}_PitchDeck_${dateStr}.pptx`;
   }
 }

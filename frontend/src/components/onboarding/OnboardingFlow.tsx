@@ -41,7 +41,10 @@ export const OnboardingFlow = () => {
       return;
     }
 
-    if (currentStep === 2 && (!localInput.target_customer || localInput.target_customer.trim().length < 10)) {
+    if (
+      currentStep === 2 &&
+      (!localInput.target_customer || localInput.target_customer.trim().length < 10)
+    ) {
       alert('타겟 고객을 최소 10자 이상 입력해주세요');
       return;
     }
@@ -51,7 +54,8 @@ export const OnboardingFlow = () => {
       return;
     }
 
-    void dispatch(saveOnboardingStep({ step: currentStep, input: localInput }));
+    // Try to save, but continue even if it fails (for demo mode)
+    await dispatch(saveOnboardingStep({ step: currentStep, input: localInput }));
 
     if (currentStep < 3) {
       dispatch(setCurrentStep((currentStep + 1) as 1 | 2 | 3));
@@ -69,9 +73,16 @@ export const OnboardingFlow = () => {
       case 1:
         return <OnboardingStep1 vision={localInput.vision || ''} onChange={handleInputChange} />;
       case 2:
-        return <OnboardingStep2 targetCustomer={localInput.target_customer || ''} onChange={handleInputChange} />;
+        return (
+          <OnboardingStep2
+            targetCustomer={localInput.target_customer || ''}
+            onChange={handleInputChange}
+          />
+        );
       case 3:
-        return <OnboardingStep3 currentStage={localInput.current_stage} onChange={handleInputChange} />;
+        return (
+          <OnboardingStep3 currentStage={localInput.current_stage} onChange={handleInputChange} />
+        );
       default:
         return null;
     }
@@ -82,7 +93,9 @@ export const OnboardingFlow = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">온보딩 정보를 불러오는 중...</p>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+            온보딩 정보를 불러오는 중...
+          </p>
         </div>
       </div>
     );
@@ -94,8 +107,12 @@ export const OnboardingFlow = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 lg:p-8">
           <div className="mb-4 sm:mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">온보딩</span>
-              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{currentStep}/3</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                온보딩
+              </span>
+              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                {currentStep}/3
+              </span>
             </div>
             <ProgressBar currentStep={currentStep} />
           </div>
