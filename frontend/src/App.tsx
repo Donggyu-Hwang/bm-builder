@@ -6,11 +6,13 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { LoginPage } from './pages/LoginPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { AIGreeting } from './components/onboarding/AIGreeting';
 import { SettingsPage } from './pages/SettingsPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import DocumentGenerationPage from './pages/DocumentGenerationPage';
 import { DocumentEditPage } from './pages/DocumentEditPage';
 import NodeCanvasPage from './pages/NodeCanvasPage';
+import CanvasPage from './pages/CanvasPage';
 import TeamManagementPage from './pages/TeamManagementPage';
 import TeamInvitePage from './pages/TeamInvitePage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
@@ -39,17 +41,18 @@ function AppRoutes() {
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/demo" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/" element={<AIGreeting />} />
         <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/create" element={<DocumentGenerationPage />} />
         <Route path="/documents/:id/edit" element={<DocumentEditPage />} />
         <Route path="/documents/:documentId/node-canvas" element={<NodeCanvasPage />} />
+        <Route path="/canvas" element={<CanvasPage />} />
         <Route path="/teams" element={<TeamManagementPage />} />
         <Route path="/invite/:token" element={<TeamInvitePage />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
       <ShortcutModal />
     </>

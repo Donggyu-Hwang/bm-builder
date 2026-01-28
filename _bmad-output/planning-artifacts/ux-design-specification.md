@@ -2,18 +2,24 @@
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 inputDocuments:
   - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/product-brief-bm-builder-2026-01-09.md
-  - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/prd.md
+  - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/prd-leanstartup-canvas-2026-01-26.md
+  - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/epics-new.md
   - /Users/donggyu/bm-builder/_bmad-output/project-context.md
 workflowType: 'create-ux-design'
 project_name: 'bm-builder'
 user_name: 'Donggyu'
 date: '2026-01-09'
+updatedAt: '2026-01-28'
+updateReason: 'Aligned with latest PRD and Epics (leanstartup-canvas, epics-new)'
 ---
 
 # UX Design Specification: bm-builder
 
 **Author:** Donggyu
 **Date:** 2026-01-09
+**Updated:** 2026-01-28
+
+> **📝 업데이트 노트:** 이 문서는 최신 PRD (prd-leanstartup-canvas-2026-01-26.md)와 Epics (epics-new.md)에 맞춰 업데이트되었습니다. React Flow 기반 무한 캔버스는 **MVP에 포함**됩니다.
 
 ---
 
@@ -201,6 +207,66 @@ bm-builder는 "AI 공동 창업자"라는 핵심 가치를 통해 창업가의 �
 - 물리적 흐름 + 대화형 AI의 하이브리드 선택
 - 비기술적 사용자(이서연)를 위한 진입 장벽 해결 방안 발견
 - "AI가 먼저 제안"의 구체적 패턴 정의
+
+---
+
+## MVP vs Post-MVP Scope
+
+> **⚠️ 중요:** 이 섹션은 Implementation Readiness Report (2026-01-28)의 발견 사항을 반영하여 MVP와 Post-MVP를 명확히 구분합니다.
+
+### ✅ MVP Scope (3개월, 6개 Epic)
+
+**Epic 1: AI Co-Founder와 함께 시작하기** 🤖
+- AI 인사와 Proactive 제안 (3가지 옵션)
+- 온보딩 튜토리얼 (4단계 가이드)
+- 네트워크 오류 안내 (오프라인 모드)
+
+**Epic 2: 무한 캔버스 탐색** 🎨
+- **React Flow 기반 무한 캔버스** ✅ **MVP 포함**
+- 7단계 린스타트업 노드 타입
+- 노드 생성 (더블클릭, 500ms)
+- 노드 이동 (드래그, 100ms 응답)
+- 노드 연결 (Shift+드래그, 100ms 렌더링)
+- **모바일:** 터치 drag & drop (150ms), 핀치 줌
+
+**Epic 3: 7단계 린스타트업 여정** 📊
+- 진행 상태 시각화 (색상: 회색/노란색/초록색)
+- 진행률 바 ("완료 X/7")
+- Progressive disclosure (처음 3단계만 표시)
+
+**Epic 4: AI Co-Founder 대화 경험** 💬
+- 노드 상세 보기 (사이드바, 200ms 로딩)
+- AI 맥락 인식 대화 (이전 노드 내용 기반)
+- AI API 에러 처리 (재시도 3회)
+
+**Epic 5: 진행 상태 저장 및 복구** 💾
+- 자동 저장 (10초마다)
+- LocalStorage 백업
+- 버전 관리 (최근 10개 버전)
+- 오프라인 지원
+
+**Epic 6: 정부지원사업 문서 생성** 📄
+- 부분 진행 상태 내보내기 (3개 이상 노드)
+- 전체 IR 자료 생성 (7개 노드 완료 시)
+- PDF, DOCX 다운로드
+
+### 🚫 Post-MVP Scope (6개월 이후)
+
+**Real-time Collaboration** (9개월 이후)
+- WebSocket 실시간 커서
+- @멘션 기능
+- 멀티플레이어 모드
+
+**Advanced Features** (버전 2.0+)
+- 팀 협업 기능 (공동 편집)
+- 버전 관리 고도화
+- 관리자 대시보드
+- 벌크 라이선스
+
+**RAG 시스템 확장** (v1.1)
+- Phase 1 (MVP): 임베딩 10개 문서 한도
+- Phase 2 (v1.1): 100개 문서 확장
+- Google Drive, OneDrive, Dropbox 연동
 
 ---
 

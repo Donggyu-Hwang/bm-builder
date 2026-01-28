@@ -1,19 +1,19 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
-  - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/prd.md
-  - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/product-brief-bm-builder-2026-01-09.md
-  - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/course-correction-2026-01-18.md
-  - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/epics.md
+  - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/prd-leanstartup-canvas-2026-01-26.md
+  - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/epics-new.md
   - /Users/donggyu/bm-builder/_bmad-output/planning-artifacts/ux-design-specification.md
   - /Users/donggyu/bm-builder/_bmad-output/project-context.md
 workflowType: 'architecture'
 project_name: 'bm-builder'
 user_name: 'Donggyu'
-date: '2026-01-18'
+date: '2026-01-28'
 lastStep: 8
 status: complete
-completedAt: 2026-01-18
+completedAt: 2026-01-28
+updatedAt: 2026-01-28
+updateReason: 'Aligned with latest PRD and Epics (leanstartup-canvas, epics-new)'
 ---
 
 # Architecture Decision Document
@@ -24,79 +24,119 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ## Project Context Analysis
 
+> **📝 업데이트 노트 (2026-01-28):** 이 섹션은 최신 PRD (prd-leanstartup-canvas-2026-01-26.md)와 Epics (epics-new.md)에 맞춰 업데이트되었습니다.
+
 ### Requirements Overview
 
-**Functional Requirements:**
-총 72개 Functional Requirements (63 MVP + 9 Post-MVP)가 18개 Capability Area로 구성됨:
+**Functional Requirements (PRD 기반):**
+총 **11개 Functional Requirements**가 린스타트업 캔버스 핵심 기능을 정의함:
 
-**MVP 우선순위 (3개월, 코스 교정 반영):**
+**MVP 핵심 기능 (3개월, 6개 Epic):**
 
-**Phase 1 - 핵심 (Must-Have):**
-1. **AI Document Generation** (FR11-16): Claude 4.5 멀티모달 생성, 5개 정부지원사업 양식, IR 자료
-2. **Document Embedding & Context Management** (FR17-21): RAG 시스템 (pgvector), Google Drive 연동, 최대 100개 문서
-3. **User Onboarding & Personalization** (FR1-5): AI 기반 비전 이해 인터뷰, 개인화된 경험
+**Epic 1 - AI Co-Founder와 함께 시작하기:**
+- FR-007: 온보딩 튜토리얼 (Hybrid Approach, 4단계 가이드)
+- FR-011: 네트워크 오류 안내 (오프라인 모드)
+- FR-001: 캔버스 진입 (1초 로딩)
+- FR-002: 노드 생성 (500ms)
 
-**Phase 2 - 중요 (Should-Have):**
-4. **User Interface & Experience** (FR33-38): Dark Mode (자동 감지), 반응식 디자인, 프로그레시브 스트리밍 (10초 첫 화면)
-5. **Team Collaboration** (FR22-27): 세분화된 권한 (5가지 역할), Polling 기반 협업 (30초 간격)
-6. **Dashboard & Analytics** (FR60-61): 진행 상황 시각화, 성취감 강조
+**Epic 2 - 무한 캔버스 탐색:**
+- FR-001, FR-002: 캔버스 진입, 노드 생성
+- FR-003: 노드 이동 (100ms 드래그 응답)
+- FR-004: 노드 연결 (100ms 렌더링)
 
-**Phase 3 - 선택적 (Nice-to-Have, Post-MVP):**
-7. **Visual Workflow Management** (FR6-10): React Flow 기반 Node UI, 무한 캔버스 (6개월 이후)
-8. **Real-time Collaboration** (FR62-64): WebSocket 실시간 커서, @멘션 (9개월 이후)
-9. **Advanced Features** (FR65-72): 버전 관리, 관리자 대시보드, 벌크 라이선스
+**Epic 3 - 7단계 린스타트업 여정:**
+- FR-006: 진행 상태 시각화 (색상, 진행률 바)
 
-**Non-Functional Requirements:**
-총 20개 NFR이 아키텍처 결정을 주도:
+**Epic 4 - AI Co-Founder 대화 경험:**
+- FR-005: 노드 상세 보기 (200ms 사이드바 로딩)
+- FR-010: AI API 에러 처리
 
-**Performance (3개) - MVP 현실적 조정:**
-- 문서 생성: 30초 (간단)/2분 (복잡), 초기 500자 10초 프로그레시브 스트리밍
-- Simple Form UI: 100ms 반응 (Node UI는 Post-MVP)
-- 동시 편집: Polling 30초 (MVP), WebSocket 1초 (Post-MVP)
+**Epic 5 - 진행 상태 저장 및 복구:**
+- NFR-012: 상태 관리 및 저장
+- NFR-013: 오프라인 지원
+- NFR-014: 버전 관리
 
-**Security (4개) - ⭐ 코스 교정으로 인한 중요 변경사항:**
-- 데이터 암호화: TLS 1.3, AES-256
-- 인증: **JWT + Passport.js** (OAuth 2.0: Google, Naver 직접 구현)
-- 개인정보: 개인정보보호법, GDPR 준수
-- 결제: PCI-DSS (PG사 통해, 6개월 이후)
+**Epic 6 - 정부지원사업 자동 생성:**
+- FR-008: 정부지원사업 내보내기 (7개 노드 완료 시)
+- FR-009: 부분 진행 상태 내보내기 (3개 이상 노드)
+- FR-010: AI API 에러 처리 (재시도 로직)
 
-**Scalability (3개) - 단순화:**
-- 동시 사용자: 100명 (MVP) → 500명 (6개월)
-- 저장: 5GB/사용자 (기존 10GB 축소), 50MB 단일 파일, 100개 임베딩 문서
-- API: 월 50회 (프리티어), 300회 (Basic)
+**Non-Functional Requirements (PRD 기반, 총 26개):**
 
-**Accessibility (3개):**
-- WCAG 2.1 AA 준수
-- 다국어: 한국어 완벽, 영어 (Post-MVP)
-- 반응식: iOS 15+, Android 12+, Chrome 110+
+**Performance (NFR-P1~P3):**
+- NFR-P1: 페이지 로드 (2초 이내, 3G 네트워크 기준)
+- NFR-P2: 노드 생성 성능 (500ms 이내)
+- NFR-P3: AI 응답 속도
+  - 짧은 질문(100자 이내): 2초 이내 응답 시작, 5초 이내 완료
+  - 긴 질문(100자 이상): 3초 이내 응답 시작, 10초 이내 완료
+  - 7개 노드 완성 평균 시간: 30분 목표
 
-**Integration (3개) - ⭐ 코스 교정 반영:**
-- Google Drive: **직접 OAuth 2.0 구현** (Passport.js Google Strategy)
-- AI API: Claude 4.5만 (GLM Fallback은 Post-MVP)
-- RAG: **직접 PostgreSQL + pgvector**, 70% 정확도 Top-5, 100개 문서 한도
+**Scalability (NFR-S1~S3):**
+- NFR-S1: 100 WAU 지원 (P95 < 500ms, CPU < 70%, 메모리 < 80%)
+- NFR-S2: 1,000 WAU 지원 (P95 < 1초, 캐시 적중률 80%)
+- NFR-S3: 10,000 WAU 지원 (P95 < 2초, 99.9% SLA)
 
-**Reliability (4개):**
-- 가용성: 99.5% Uptime (기존 99.9% 완화)
-- 백업: 일일 새벽 3시, 7일 보관 (기존 30일 축소)
-- 재해 복구: RTO 8시간 (기존 4시간 완화)
-- 장애 대응: 5분 Slack 알림
+**AI 비용 최적화 (NFR-A1~A5):**
+- NFR-A1: 프롬프트 로딩 (100ms 이내)
+- NFR-A2: Claude API 활용 (최대 200K 토큰 윈도우)
+- NFR-A3: 응답 캐싱 (단기 1시간 + 장기 벡터 DB)
+- NFR-A4: 프롬프트 관리 (DB 저장, 동적 로딩)
+- NFR-A5: 비용 모니터링 (월 $100/$200 알림)
+
+**접근성 (NFR-AC1~AC5):**
+- NFR-AC1: 키보드 지원 (Ctrl+Z, Del)
+- NFR-AC2: 반응형 디자인 (320px-1920px)
+- NFR-AC3: 색맹 지원 (WCAG AA 4.5:1)
+- NFR-AC4: **모바일 UX** (터치 drag & drop 150ms, 핀치 줌)
+- NFR-AC5: WCAG 2.1 AA 준수
+
+**호환성 (NFR-C1~C5):**
+- NFR-C1: 브라우저 지원 (Chrome 90+, Safari 14+, Edge 90+, Firefox 88+)
+- NFR-C2: 모바일 브라우저 (iOS Safari, Chrome Mobile)
+- NFR-C3: 화면 크기 (1280px 이상 권장, 720px 이상 권장)
+- NFR-C4: 테스트 전략 (최신 2버전 크로스 브라우징)
+- NFR-C5: Progressive Enhancement
+
+**데이터 (NFR-D1~D8):**
+- NFR-D1: 상태 관리 (클라이언트 + 서버 동기화)
+- NFR-D2: 자동 저장 (10초마다)
+- NFR-D3: 충돌 처리 (Optimistic Locking)
+- NFR-D4: 저장 실패 처리
+- NFR-D5: 오프라인 지원 (LocalStorage 백업)
+- NFR-D6: 동기화 속도 (온라인 복구 5초 이내)
+- NFR-D7: 페이지 복원 (Autosave 기반)
+- NFR-D8: 버전 관리 (최근 10개 버전, 1분마다 스냅샷)
+
+**⚠️ 추가 필요 NFR (Implementation Readiness Report 발견 사항):**
+- 보안 요구사항 (인증, 권한 관리, 데이터 암호화) - **추가 필요**
+- 테스트 요구사항 (단위, 통합, E2E) - **추가 필요**
+- 모니터링 및 로깅 전략 - **추가 필요**
+- 배포 및 CI/CD 요구사항 - **추가 필요**
 
 **Scale & Complexity:**
-- Primary domain: **AI-powered Document Generation SaaS**
-- Complexity level: **Medium-High** (기존 Medium에서 상향 조정)
-  - 이유: OAuth 직접 구현, JWT 미들웨어, 권한 시스템 재구현, RAG 시스템
-- 핵심 복잡도: RAG 시스템 (pgvector), AI API 통합 (Claude 4.5), OAuth 2.0 인증 흐름, 멀티 테넌시
+- Primary domain: **린스타트업 캔버스 - AI 공동 창업자 플랫폼**
+- Complexity level: **Medium** (린스타트업 7단계 시각화, 무한 캔버스, AI 맥락 인식)
+  - 핵심 복잡도: React Flow 무한 캔버스, Claude API 통합, 맥락 인식 AI, 정부지원사업 자동화
+- MVP 범위: 6개 Epic, 19 Stories, 157 Acceptance Criteria
+- **⚠️ MVP 결정 사항:**
+  - **React Flow Node UI:** MVP 포함 (Epic 2, Stories 2.1-2.4)
+  - **RAG 시스템:** Phase 1 단순화 (임베딩 10개 문서 한도)
+  - **인증:** OAuth 2.0 (Google, Naver) 필요함 - 간소화된 구현 권장
 
 ### Technical Constraints & Dependencies
 
-**기술적 제약사항 (MVP 단순화 + 코스 교정 반영):**
+> **📝 업데이트 노트 (2026-01-28):** React Flow와 모바일 전략이 최신 Epics에 맞춰 업데이트되었습니다.
+
+**기술적 제약사항 (MVP):**
 
 **Frontend:**
-- React 19 (Vite 5.1) - Simple Form UI (React Flow는 Post-MVP)
+- React 19 (Vite 7.3.1) - **React Flow 기반 무한 캔버스 포함**
 - TypeScript 5.3 (Strict Mode)
 - Tailwind CSS 3.4
 - Redux Toolkit 2.10.1 (상태 관리)
-- **Axios 1.6.2** (HTTP Client - Supabase Client 제거)
+- **React Flow** (노드 기반 시각화, Epic 2)
+- Axios 1.6.2 (HTTP Client)
+- **모바일 최적화:** 터치 drag & drop, 핀치 줌 (NFR-AC4)
 
 **Backend:**
 - **Node.js 22 LTS** (기존 Node.js 20+에서 업그레이드)

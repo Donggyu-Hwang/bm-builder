@@ -29,6 +29,8 @@ import plansRoutes from './routes/v1/plans.routes';
 import auditRoutes from './routes/v1/audit.routes';
 import healthRoutes from './routes/v1/health.routes';
 import webSocketRoutes from './routes/v1/websocket.routes';
+import canvasRoutes from './routes/v1/canvas.routes';
+import aiRoutes from './routes/v1/ai.routes';
 
 dotenv.config();
 
@@ -99,6 +101,8 @@ app.use('/api/v1', plansRoutes);
 app.use('/api/v1', auditRoutes);
 app.use('/api/v1', healthRoutes);
 app.use('/api/v1/websocket', webSocketRoutes);
+app.use('/api/v1/canvas', canvasRoutes);
+app.use('/api/v1/ai', aiRoutes);
 
 // Start server only if this file is run directly
 if (require.main === module) {
