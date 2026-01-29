@@ -1,212 +1,134 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OnboardingCanvas } from './OnboardingCanvas';
-import type { OnboardingMode } from '../../types/canvas';
-
-// Mock useMediaQuery hook
-vi.mock('../../hooks/useMediaQuery', () => ({
-  useMediaQuery: vi.fn(),
-}));
-
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { renderWithRedux } from '../../test/setup';
 
 // Mock localStorage
-const mockLocalStorage = {
+const localStorageMock = {
   getItem: vi.fn(),
   setItem: vi.fn(),
-  removeItem: vi.fn(),
   clear: vi.fn(),
 };
+vi.stubGlobal('localStorage', localStorageMock);
 
-vi.stubGlobal('localStorage', mockLocalStorage);
-
-const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>);
-};
-
-describe('OnboardingCanvas Component', () => {
+describe('OnboardingCanvas', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockLocalStorage.getItem.mockReturnValue(null);
-    // Default to desktop view
-    (useMediaQuery as vi.Mock).mockReturnValue(false);
+    // Reset localStorage mock before each test
+    localStorageMock.getItem.mockReturnValue(null);
+  });
+  it('renders header with title', () => {
+    renderWithRedux(<OnboardingCanvas mode="beginner" />);
+    expect(screen.getByText('Lean Startup Canvas')).toBeInTheDocument();
   });
 
-  afterEach(() => {
-    localStorage.clear();
+  it('renders AI Co-Founder subtitle', () => {
+    renderWithRedux(<OnboardingCanvas mode="beginner" />);
+    expect(screen.getByText('AI Co-Founder와 함께 시작하기')).toBeInTheDocument();
   });
 
-  describe('Rendering', () => {
-    it('should render beginner mode', () => {
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
-
-      expect(screen.getByText('온보딩 모드:')).toBeInTheDocument();
-      expect(screen.getByText('초보자 모드')).toBeInTheDocument();
-    });
-
-    it('should render problem-discovery mode', () => {
-      renderWithRouter(<OnboardingCanvas mode="problem-discovery" />);
-
-      expect(screen.getByText('문제 발굴 모드')).toBeInTheDocument();
-      expect(screen.getByText('어떤 분야에서 문제를 발견하고 싶으신가요?')).toBeInTheDocument();
-    });
-
-    it('should render team mode', () => {
-      renderWithRouter(<OnboardingCanvas mode="team" />);
-
-      expect(screen.getByText('팀 온보딩 모드')).toBeInTheDocument();
-      expect(screen.getByText('팀 온보딩 팁')).toBeInTheDocument();
-    });
-
-    it('should render AI guide toggle', () => {
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
-
-      expect(screen.getByLabelText('AI 가이드 켜기/끄기')).toBeInTheDocument();
-      expect(screen.getByText('AI 가이드')).toBeInTheDocument();
-    });
+  it('shows beginner mode message when mode is beginner', () => {
+    renderWithRedux(<OnboardingCanvas mode="beginner" />);
+    // AI guide message, empty state, and hint all contain similar text
+    expect(screen.getAllByText(/더블클릭하여/)).toHaveLength(3);
+    expect(screen.getByText(/또는 이 영역을 클릭하세요/)).toBeInTheDocument();
   });
 
-  describe('AI Guide Toggle', () => {
-    it('should toggle AI guide on click', () => {
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
+  it('shows problem discovery mode message when mode is problem-discovery', () => {
+    renderWithRedux(<OnboardingCanvas mode="problem-discovery" />);
+    expect(screen.getByText(/왼쪽의 질문에 답변하여 아이디어를 구체화해보세요/)).toBeInTheDocument();
+  });
 
-      const toggle = screen.getByLabelText('AI 가이드 켜기/끄기');
-      fireEvent.click(toggle);
+  it('shows team mode message when mode is team', () => {
+    renderWithRedux(<OnboardingCanvas mode="team" />);
+    expect(screen.getByText(/팀원들과 함께 협업하며 아이디어를 발전시켜 보세요/)).toBeInTheDocument();
+  });
 
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('bm_builder_ai_guide_toggle', 'false');
-    });
+  it('displays team invite button only in team mode', () => {
+    renderWithRedux(<OnboardingCanvas mode="beginner" />);
+    expect(screen.queryByText('팀원 초대')).not.toBeInTheDocument();
 
-    it('should load AI guide state from localStorage', async () => {
-      mockLocalStorage.getItem.mockReturnValue('false');
+    cleanup(); // Clean up before rendering again
 
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
+    renderWithRedux(<OnboardingCanvas mode="team" />);
+    expect(screen.getByText('팀원 초대')).toBeInTheDocument();
+  });
 
+  it('shows progress bar with initial 0/3 count', () => {
+    renderWithRedux(<OnboardingCanvas mode="beginner" />);
+    expect(screen.getByText('0/3')).toBeInTheDocument();
+  });
+
+  it('increments node count when canvas is double-clicked and node type is selected', async () => {
+    renderWithRedux(<OnboardingCanvas mode="beginner" />);
+    const canvas = screen.getByText(/또는 이 영역을 클릭하세요/).closest('div')?.parentElement;
+
+    // Story 2.2: Double-click with 300ms delay to open NodeTypeModal
+    fireEvent.click(canvas!);
+    fireEvent.click(canvas!);
+
+    // Story 2.1: New NodeTypeModal title is visible
+    await waitFor(() => {
+      expect(screen.getByText(/노드 타입 선택/)).toBeInTheDocument();
+    }, { timeout: 1000 });
+
+    // Select first node type (문제 발굴)
+    const nodeTypeButton = screen.getByText('문제 발굴').closest('button');
+    fireEvent.click(nodeTypeButton!);
+
+    // Story 2.1: Wait for modal to close after selection (has 150ms delay)
+    await waitFor(() => {
+      expect(screen.queryByText(/노드 타입 선택/)).not.toBeInTheDocument();
+    }, { timeout: 1000 });
+  });
+
+  it('shows completion modal when 3+ nodes are created', async () => {
+    renderWithRedux(<OnboardingCanvas mode="beginner" />);
+    const canvas = screen.getByText(/또는 이 영역을 클릭하세요/).closest('div')?.parentElement;
+
+    // Create 3 nodes by double-clicking and selecting node type
+    for (let i = 0; i < 3; i++) {
+      // Story 2.2: Double-click with 300ms delay to open NodeTypeModal
+      fireEvent.click(canvas!);
+      fireEvent.click(canvas!);
+
+      // Story 2.1: Wait for modal to appear and be rendered
       await waitFor(() => {
-        expect(screen.getByText('꺼짐')).toBeInTheDocument();
-      });
-    });
-  });
+        expect(screen.getByText(/노드 타입 선택/)).toBeInTheDocument();
+      }, { timeout: 1000 });
 
-  describe('Node Creation Tracking', () => {
-    it('should track node count when node is created', () => {
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
+      // Get all buttons with "문제 발굴" text and click the first one in the modal
+      const nodeTypeButtons = screen.getAllByText('문제 발굴');
+      const nodeTypeButton = nodeTypeButtons.find(btn => btn.closest('button'))?.closest('button');
+      fireEvent.click(nodeTypeButton!);
 
-      const addButton = screen.getByText('노드 추가 (데모)');
-      fireEvent.click(addButton);
-
-      expect(screen.getByText(/노드 수: 1\/3/)).toBeInTheDocument();
-    });
-
-    it('should show completion modal after 3 nodes', async () => {
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
-
-      const addButton = screen.getByText('노드 추가 (데모)');
-
-      // Add 3 nodes
-      fireEvent.click(addButton);
-      fireEvent.click(addButton);
-      fireEvent.click(addButton);
-
+      // Story 2.1: Wait for modal to close (has 150ms delay)
       await waitFor(() => {
-        expect(screen.getByText('온보딩 완료!')).toBeInTheDocument();
+        expect(screen.queryByText(/노드 타입 선택/)).not.toBeInTheDocument();
+      }, { timeout: 1000 });
+    }
+
+    // Now check for completion modal
+    await waitFor(() => {
+      expect(screen.getByText(/온보딩 완료!/)).toBeInTheDocument();
+      // Check for AutoTransitionModal elements
+      expect(screen.getByText(/이제 메인 캔버스로 자동 전환됩니다/)).toBeInTheDocument();
+      // Use getAllByText and find the specific button in the modal
+      const cancelButtons = screen.getAllByText('취소');
+      const cancelButton = cancelButtons.find(btn => {
+        const buttonElement = btn.closest('button');
+        return buttonElement?.classList.contains('bg-white');
       });
-    });
+      expect(cancelButton).toBeInTheDocument();
+    }, { timeout: 1000 });
   });
 
-  describe('Problem Discovery Mode', () => {
-    it('should display 3 questions', () => {
-      renderWithRouter(<OnboardingCanvas mode="problem-discovery" />);
-
-      expect(screen.getByText('질문 1/3')).toBeInTheDocument();
-      expect(screen.getByText('어떤 분야에서 문제를 발견하고 싶으신가요?')).toBeInTheDocument();
-    });
-
-    it('should navigate between questions', () => {
-      renderWithRouter(<OnboardingCanvas mode="problem-discovery" />);
-
-      const nextButton = screen.getByText('다음');
-      fireEvent.click(nextButton);
-
-      expect(screen.getByText('질문 2/3')).toBeInTheDocument();
-    });
+  it('renders OnboardingModeBadge', () => {
+    renderWithRedux(<OnboardingCanvas mode="beginner" />);
+    expect(screen.getByText('초보자 모드')).toBeInTheDocument();
   });
 
-  describe('Team Mode', () => {
-    it('should show team tips', () => {
-      renderWithRouter(<OnboardingCanvas mode="team" />);
-
-      expect(screen.getByText('팀 온보딩 팁')).toBeInTheDocument();
-      expect(screen.getByText(/팀원 초대/)).toBeInTheDocument();
-    });
-
-    it('should render invite team button', () => {
-      renderWithRouter(<OnboardingCanvas mode="team" />);
-
-      const inviteButton = screen.getByText('팀원 초대 (다음 에픽에서 구현 예정)');
-      expect(inviteButton).toBeInTheDocument();
-      expect(inviteButton.tagName).toBe('BUTTON');
-      expect(inviteButton).toBeDisabled();
-    });
-  });
-
-  describe('Completion Modal', () => {
-    it('should have two action buttons', async () => {
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
-
-      const addButton = screen.getByText('노드 추가 (데모)');
-
-      // Add 3 nodes
-      fireEvent.click(addButton);
-      fireEvent.click(addButton);
-      fireEvent.click(addButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('계속 온보딩 모드 사용')).toBeInTheDocument();
-        expect(screen.getByText('메인 캔버스로 전환')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Accessibility', () => {
-    it('should have proper ARIA labels', () => {
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
-
-      const badge = screen.getByRole('status');
-      expect(badge).toBeInTheDocument();
-
-      const toggle = screen.getByLabelText('AI 가이드 켜기/끄기');
-      expect(toggle).toBeInTheDocument();
-    });
-
-    it('should be keyboard navigable', () => {
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
-
-      const toggle = screen.getByLabelText('AI 가이드 켜기/끄기');
-      toggle.focus();
-      expect(document.activeElement).toBe(toggle);
-
-      fireEvent.keyDown(toggle, { key: 'Enter' });
-      expect(mockLocalStorage.setItem).toHaveBeenCalled();
-    });
-  });
-
-  describe('Responsive Layout', () => {
-    it('should render desktop header on desktop', () => {
-      (useMediaQuery as vi.Mock).mockReturnValue(false);
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
-
-      // Desktop header should be visible
-      expect(screen.getByText('AI 가이드')).toBeInTheDocument();
-    });
-
-    it('should render mobile bottom bar on mobile', () => {
-      (useMediaQuery as vi.Mock).mockReturnValue(true);
-      renderWithRouter(<OnboardingCanvas mode="beginner" />);
-
-      // Mobile bottom bar should show mode badge and toggle
-      expect(screen.getByText('AI 가이드')).toBeInTheDocument();
-      expect(screen.getByText('초보자 모드')).toBeInTheDocument();
-    });
+  it('renders AIGuideToggle', () => {
+    renderWithRedux(<OnboardingCanvas mode="beginner" />);
+    expect(screen.getByText('AI 가이드')).toBeInTheDocument();
   });
 });

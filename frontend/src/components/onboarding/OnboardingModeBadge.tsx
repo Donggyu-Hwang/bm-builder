@@ -3,7 +3,6 @@ import type { OnboardingMode } from '../../types/canvas';
 
 interface OnboardingModeBadgeProps {
   mode: OnboardingMode;
-  className?: string;
 }
 
 const MODE_LABELS: Record<OnboardingMode, string> = {
@@ -12,24 +11,16 @@ const MODE_LABELS: Record<OnboardingMode, string> = {
   team: '팀 온보딩 모드',
 };
 
-const MODE_COLORS: Record<OnboardingMode, string> = {
-  beginner: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  'problem-discovery': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  team: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-};
-
-export const OnboardingModeBadge: React.FC<OnboardingModeBadgeProps> = ({
-  mode,
-  className = '',
-}) => {
+export const OnboardingModeBadge: React.FC<OnboardingModeBadgeProps> = ({ mode }) => {
   return (
-    <div
-      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${MODE_COLORS[mode]} ${className}`}
-      role="status"
-      aria-live="polite"
-    >
-      <span className="mr-1">온보딩 모드:</span>
-      <span className="font-semibold">{MODE_LABELS[mode]}</span>
+    <div className="fixed bottom-16 left-1/2 -translate-x-1/2 md:top-6 md:left-auto md:translate-x-0 md:right-36 lg:top-6 lg:right-36 z-50">
+      <div className="px-4 py-2 bg-white/90 backdrop-blur-md border-2 border-gray-900 rounded-lg shadow-lg">
+        <p className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+          온보딩 모드: <span className="text-gray-900">{MODE_LABELS[mode]}</span>
+        </p>
+      </div>
     </div>
   );
 };
+
+export default OnboardingModeBadge;

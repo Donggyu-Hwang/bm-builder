@@ -1,6 +1,6 @@
 # Story 6.1: 3개 노드 완료 시 부분 내보내기 버튼 표시
 
-Status: done
+Status: backlog
 
 ## Story
 

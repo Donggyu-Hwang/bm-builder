@@ -1,26 +1,32 @@
-import 'dotenv/config';
 import { Pool, PoolConfig } from 'pg';
 
 const poolConfig: PoolConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'postgres',
+  database: process.env.DB_NAME || 'bm_builder',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD,
-  max: parseInt(process.env.DB_POOL_MAX || '20'), // Maximum number of clients in the pool
-  idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '30000'), // Close idle clients after 30s
-  connectionTimeoutMillis: parseInt(process.env.DB_POOL_TIMEOUT || '2000'), // Return an error after 2s if connection fails
+  password: process.env.DB_PASSWORD || 'postgres',
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 };
 
-const pool = new Pool(poolConfig);
+export const pool = new Pool(poolConfig);
 
-// Test the connection
-pool.on('connect', () => {
-  console.log('✅ PostgreSQL connected successfully');
-});
+export const testConnection = async (): Promise<boolean> => {
+  try {
+    const client = await pool.connect();
+    await client.query('SELECT NOW()');
+    client.release();
+    console.log('✅ PostgreSQL connected successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ PostgreSQL connection failed:', error);
+    return false;
+  }
+};
 
-pool.on('error', (err) => {
-  console.error('❌ PostgreSQL connection error:', err);
-});
-
-export default pool;
+export const closePool = async (): Promise<void> => {
+  await pool.end();
+  console.log('PostgreSQL connection pool closed');
+};

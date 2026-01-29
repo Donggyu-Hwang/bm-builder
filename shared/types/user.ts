@@ -1,12 +1,9 @@
 export interface User {
   id: string;
   email: string;
-  password_hash?: string;
-  name?: string;
-  full_name?: string;
-  avatar_url?: string;
-  google_id?: string;
-  onboarding_completed?: boolean;
+  full_name: string | null;
+  avatar_url: string | null;
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -17,19 +14,13 @@ export interface UserProfile extends User {
 
 export interface CreateUserInput {
   email: string;
-  password_hash?: string;
-  name?: string;
-  full_name?: string;
-  avatar_url?: string;
-  google_id?: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface UpdateUserInput {
   email?: string;
-  password_hash?: string;
-  name?: string;
-  full_name?: string;
-  avatar_url?: string;
-  google_id?: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
   onboarding_completed?: boolean;
 }

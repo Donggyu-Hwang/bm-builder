@@ -1,8 +1,8 @@
-# generated: 2026-01-28
+# generated: 2026-01-29
 # project: bm-builder
-# project_key: bm-builder-leanstartup-canvas
+# project_key: bm-builder
 # tracking_system: file-system
-# story_location: "{implementation_artifacts}"
+# story_location: "{project-root}/_bmad-output/implementation-artifacts"
 
 # STATUS DEFINITIONS:
 # ==================
@@ -33,86 +33,93 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-01-28
-project: bm-builder-leanstartup-canvas
-project_key: bm-builder-leanstartup-canvas
+generated: 2026-01-29
+project: bm-builder
+project_key: bm-builder
 tracking_system: file-system
-story_location: "/Users/donggyu/bm-builder/_bmad-output/implementation-artifacts"
-
-# PROJECT CONTEXT
-# ===============
-# Based on: prd-leanstartup-canvas-2026-01-26.md
-# Based on: epics-new.md
-# Total Epics: 6
-# Total Stories: 19
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
 
 development_status:
-  # Epic 1: AI Co-Founder와 함께 시작하기 🤖
-  epic-1: done
-  1-1-ai-greeting-user-state: done
+  # Epic 1: AI Co-Founder와 함께 시작하기
+  epic-1: in-progress
+  1-1-ai-greeting-user-state: backlog
   1-2-adaptive-onboarding-canvas: done
   1-3-ai-guide-first-node: done
   1-4-onboarding-completion-next-steps: done
-  epic-1-retrospective: done
+  epic-1-retrospective: optional
 
-  # Epic 2: 캔버스 코어 경험 🎨
-  epic-2: done
+  # Epic 2: 7단계 노드 시스템
+  epic-2: in-progress
   2-1-seven-stages-node-types: done
   2-2-node-creation-double-click: done
   2-3-node-drag-drop: done
   2-4-node-connection-shift-drag: done
-  epic-2-retrospective: done
+  epic-2-retrospective: in-progress
 
-  # Epic 3: 7단계 린스타트업 여정 📊
-  epic-3: done
-  3-1-color-coding-node-visualization: done
-  3-2-header-progress-bar: done
-  3-3-progressive-disclosure: done
-  epic-3-retrospective: done
+  # Epic 3: 진행 상태 시각화
+  epic-3: backlog
+  3-1-color-coding-node-visualization: backlog
+  3-2-header-progress-bar: backlog
+  3-3-progressive-disclosure: backlog
+  epic-3-retrospective: optional
 
-  # Epic 4: AI Co-Founder 대화 경험 💬
-  epic-4: done
-  4-1-node-sidebar-rendering: done
-  4-2-ai-contextual-conversation: done
-  4-3-ai-suggestion-approval: done
-  epic-4-retrospective: done
+  # Epic 4: AI 맥락 인식 대화
+  epic-4: backlog
+  4-1-node-sidebar-rendering: backlog
+  4-2-ai-contextual-conversation: backlog
+  4-3-ai-suggestion-approval: backlog
+  epic-4-retrospective: optional
 
-  # Epic 5: 진행 상태 저장 및 복구 💾
-  epic-5: done
-  5-1-auto-save-10-seconds: done
-  5-2-localstorage-sync: done
-  5-3-version-management: done
-  epic-5-retrospective: done
+  # Epic 5: 자동 저장 및 동기화
+  epic-5: backlog
+  5-1-auto-save-10-seconds: backlog
+  5-2-localstorage-sync: backlog
+  5-3-version-management: backlog
+  epic-5-retrospective: optional
 
-  # Epic 6: 정부지원사업 문서 생성 📄
-  epic-6: done
-  6-1-partial-export-3-nodes: done
-  6-2-ai-document-conversion: done
-  epic-6-retrospective: done
+  # Epic 6: 문서 내보내기
+  epic-6: backlog
+  6-1-partial-export-3-nodes: backlog
+  6-2-ai-document-conversion: backlog
+  epic-6-retrospective: optional
 
-# PROJECT COMPLETION SUMMARY
-# ===========================
-# All 6 Epics completed
-# Total 19 Stories completed
-# Project Status: FULLY IMPLEMENTED ✅
-# Completion Date: 2026-01-28
-# Autonomous Execution: AI Agent (Claude Sonnet 4.5)
+# PROJECT SUMMARY
+# ===============
+# Total Epics: 6
+# Total Stories: 19
+# Total Retrospectives: 6
+# Framework: Agile/Scrum with BMAD methodology
 #
-# BACKEND API IMPLEMENTATION (2026-01-28)
-# =======================================
-# - Created lean_startup_canvases table migration
-# - Implemented /api/v1/canvas/* endpoints (GET, PUT, PATCH, DELETE, POST unlock-stage)
-# - Implemented /api/v1/ai/* endpoints (POST suggestion, POST conversation)
-# - Registered routes in backend/src/index.ts
-# - TypeScript compilation verified
-# - Documentation created:
-#   - Backend-API-Implementation-Summary.md
-#   - Canvas-API-Quick-Reference.md
-#   - Code-Review-Report-Epic-2-6.md
+# PHASE BREAKDOWN:
+# ================
+# Phase 1 (MVP): Epic 1-6 (19 stories)
+#   - Epic 1: AI Co-Founder & Onboarding (4 stories)
+#   - Epic 2: 7-Stage Node System (4 stories)
+#   - Epic 3: Progress Visualization (3 stories)
+#   - Epic 4: AI Contextual Conversation (3 stories)
+#   - Epic 5: Auto-Save & Sync (3 stories)
+#   - Epic 6: Document Export (2 stories)
+#
+# EPIC DEPENDENCIES:
+# ==================
+# Epic 1 (Foundation) → Epic 2, 3, 4
+# Epic 2 (Node System) → Epic 3 (Visualization), Epic 4 (AI)
+# Epic 4 (AI Conversation) → Epic 6 (Export)
+# Epic 5 (Save/Sync) → All epics (parallel)
+#
+# FR COVERAGE:
+# ============
+# All 11 FRs covered across 6 epics
+# Epic 1: FR-001, FR-002, FR-007, FR-011
+# Epic 2: FR-002, FR-003, FR-004
+# Epic 3: FR-006
+# Epic 4: FR-005
+# Epic 5: FR-011
+# Epic 6: FR-008, FR-009, FR-010
 #
 # NEXT STEPS:
 # ===========
-# 1. Run database migration: psql -U postgres -d bm_builder -f backend/supabase/migrations/20250128000001_create_lean_startup_canvases.sql
-# 2. Update frontend canvasStorage.service.ts to use real API endpoints
-# 3. Implement actual Claude API integration in ai.routes.ts
-# 4. Write unit tests for new backend endpoints
+# 1. Begin with Epic 1 - Foundation for all features
+# 2. Follow Epic dependencies for implementation order
+# 3. Create story files when starting development
+# 4. Update statuses as work progresses

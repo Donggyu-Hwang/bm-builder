@@ -1,25 +1,21 @@
 import { configureStore } from '@reduxjs/toolkit';
-import canvasReducer from './canvasSlice';
+import onboardingReducer from './slices/onboardingSlice';
 
 export const store = configureStore({
   reducer: {
-    canvas: canvasReducer,
+    onboarding: onboardingReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // Ignore these action types for React Flow serialization
-        ignoredActions: [
-          'canvas/addNode',
-          'canvas/updateNode',
-          'canvas/setNodes',
-          'canvas/setEdges',
-        ],
-        // Ignore these field paths in all actions
-        ignoredPaths: ['canvas.nodes', 'canvas.edges'],
+        // Ignore these action types
+        ignoredActions: ['your/action/type'],
+        // Ignore these paths in the state
+        ignoredPaths: ['your.state.path'],
       },
     }),
 });
 
+// Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

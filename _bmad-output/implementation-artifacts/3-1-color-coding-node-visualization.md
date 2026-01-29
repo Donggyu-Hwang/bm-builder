@@ -1,6 +1,6 @@
 # Story 3.1: 색상 코딩 및 노드 상태 시각화
 
-Status: done
+Status: backlog
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 4.2: AI 맥락 인식 대화 시스템
 
-Status: done
+Status: backlog
 
 ## Story
 

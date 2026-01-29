@@ -1,133 +1,64 @@
-/**
- * Node Canvas API
- * API client for node management operations
- * Story 6.2: Node Drag-and-Drop and Editing
- */
-
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
 
-/**
- * Node data structure
- */
-export interface NodeData {
-  id: string;
-  type: string;
-  position: { x: number; y: number };
+export interface NodePosition {
+  x: number;
+  y: number;
+}
+
+export interface NodeUpdateRequest {
+  position: NodePosition;
+}
+
+export interface NodeResponse {
+  success: true;
   data: {
-    label: string;
-    title?: string;
-    status?: string;
-    wordCount?: number;
-    lastEdited?: string;
-    color?: string;
-    icon?: string;
-    notes?: string;
+    id: string;
+    x: number;
+    y: number;
+    updated_at: string;
   };
 }
 
 /**
- * Update nodes for a document
- * @param documentId - Document ID
- * @param nodes - Array of nodes with positions and metadata
- * @returns Updated nodes data
+ * Update node position via API
+ *
+ * Story 2.3: Debounce 300ms 후 서버 API가 호출된다
+ * This function is called after drag ends with debouncing
  */
-export async function updateDocumentNodes(
-  documentId: string,
-  nodes: NodeData[]
-): Promise<{ nodes: any[] }> {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.put(
-    `${API_BASE_URL}/api/v1/documents/${documentId}/nodes`,
-    { nodes },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
-  return response.data.data;
-}
-
-/**
- * Update a single node's data
- * @param documentId - Document ID
- * @param nodeId - Node ID
- * @param updates - Node updates (title, color, icon, notes, position)
- * @returns Updated node data
- */
-export async function updateNode(
-  documentId: string,
+export async function updateNodePosition(
   nodeId: string,
-  updates: Partial<NodeData>
-): Promise<any> {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.patch(
-    `${API_BASE_URL}/api/v1/documents/${documentId}/nodes/${nodeId}`,
-    updates,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
-  return response.data.data;
+  position: NodePosition
+): Promise<NodeResponse> {
+  try {
+    const response = await axios.patch<NodeResponse>(
+      `${API_BASE_URL}/nodes/${nodeId}`,
+      { position }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[API] Failed to update node position:', error);
+    throw error;
+  }
 }
 
 /**
- * Delete a node
- * @param documentId - Document ID
- * @param nodeId - Node ID
+ * Batch update multiple node positions (for multi-select drag)
+ *
+ * Story 2.3: Shift+Click multi-select drag
  */
-export async function deleteNode(documentId: string, nodeId: string): Promise<void> {
-  const token = localStorage.getItem('token');
-
-  await axios.delete(
-    `${API_BASE_URL}/api/v1/documents/${documentId}/nodes/${nodeId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+export async function updateMultipleNodePositions(
+  updates: Array<{ nodeId: string; position: NodePosition }>
+): Promise<NodeResponse[]> {
+  try {
+    const response = await axios.patch<NodeResponse[]>(
+      `${API_BASE_URL}/nodes/batch`,
+      { updates }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[API] Failed to batch update node positions:', error);
+    throw error;
+  }
 }
-
-/**
- * Duplicate a node
- * @param documentId - Document ID
- * @param nodeId - Node ID to duplicate
- * @returns Duplicated node data
- */
-export async function duplicateNode(
-  documentId: string,
-  nodeId: string
-): Promise<any> {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.post(
-    `${API_BASE_URL}/api/v1/documents/${documentId}/nodes/${nodeId}/duplicate`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
-  return response.data.data;
-}
-
-export const nodesApi = {
-  updateDocumentNodes,
-  updateNode,
-  deleteNode,
-  duplicateNode,
-};

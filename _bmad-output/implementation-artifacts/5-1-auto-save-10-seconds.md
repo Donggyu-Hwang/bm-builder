@@ -1,6 +1,6 @@
 # Story 5.1: 자동 저장 (10초마다)
 
-Status: done
+Status: backlog
 
 ## Story
 

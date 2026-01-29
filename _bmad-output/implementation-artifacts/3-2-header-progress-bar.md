@@ -1,6 +1,6 @@
 # Story 3.2: 헤더 진행률 바 및 "완료 X/7" 표시
 
-Status: done
+Status: backlog
 
 ## Story
 

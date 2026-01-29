@@ -1,6 +1,6 @@
 # Story 5.2: LocalStorage 백업 및 서버 동기화
 
-Status: done
+Status: backlog
 
 ## Story
 

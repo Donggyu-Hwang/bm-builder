@@ -1,6 +1,6 @@
 # Story 6.2: AI 기반 문서 변환
 
-Status: done
+Status: backlog
 
 ## Story
 

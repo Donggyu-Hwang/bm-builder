@@ -1,33 +1,45 @@
 import { useState, useEffect } from 'react';
 
+interface NetworkStatus {
+  isOnline: boolean;
+  isOffline: boolean;
+}
+
 /**
- * Hook to detect network status changes
- * @returns Object containing online status
+ * Hook to detect online/offline status
+ * @returns NetworkStatus object with isOnline and isOffline flags
  */
-export const useNetworkStatus = () => {
-  const [isOnline, setIsOnline] = useState<boolean>(() => {
-    if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
-      return navigator.onLine;
-    }
-    return true;
-  });
+export const useNetworkStatus = (): NetworkStatus => {
+  const [isOnline, setIsOnline] = useState<boolean>(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-      return;
-    }
+    // Handle online event
+    const handleOnline = () => {
+      setIsOnline(true);
+    };
 
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    // Handle offline event
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
 
+    // Add event listeners
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Cleanup event listeners on unmount
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  return { isOnline };
+  return {
+    isOnline,
+    isOffline: !isOnline,
+  };
 };
+
+export default useNetworkStatus;

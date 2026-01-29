@@ -1,75 +1,77 @@
 import React from 'react';
-import type { OnboardingMode } from '../../types/canvas';
+import { STAGE_CONFIG, INITIAL_UNLOCKED_STAGES } from '../../config/progressiveDisclosure';
 
 interface NodeTypeSelectorProps {
-  mode: OnboardingMode;
-  onSelect: (type: string) => void;
+  isVisible: boolean;
+  onSelect: (stage: number, nodeType: string) => void;
   onClose: () => void;
 }
 
-const INITIAL_NODE_TYPES = [
-  {
-    id: 'problem-discovery',
-    label: '문제 발굴',
-    stage: 1,
-    color: '#ef4444',
-    icon: '🔍',
-    description: '해결하고 싶은 문제를 발견하세요',
-  },
-  {
-    id: 'problem-definition',
-    label: '문제 정의',
-    stage: 2,
-    color: '#f97316',
-    icon: '🎯',
-    description: '문제를 명확하게 정의하세요',
-  },
-  {
-    id: 'customer-development',
-    label: '고객 개발',
-    stage: 3,
-    color: '#eab308',
-    icon: '👥',
-    description: '타겟 고객을 이해하세요',
-  },
-];
+export const NodeTypeSelector: React.FC<NodeTypeSelectorProps> = ({ isVisible, onSelect, onClose }) => {
+  if (!isVisible) return null;
 
-export const NodeTypeSelector: React.FC<NodeTypeSelectorProps> = ({ mode, onSelect, onClose }) => {
+  const handleSelect = (stage: number) => {
+    const config = STAGE_CONFIG[stage as keyof typeof STAGE_CONFIG];
+    onSelect(stage, config.name);
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-3xl w-full mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">노드 타입 선택</h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 border-2 border-gray-900">
+        {/* Header */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+            노드 타입 선택
+          </h2>
+          <p className="text-sm text-gray-600" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+            Progressive Disclosure: Stage 1-3만 표시
+          </p>
+        </div>
+
+        {/* Node Types Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {INITIAL_UNLOCKED_STAGES.map((stage) => {
+            const config = STAGE_CONFIG[stage as keyof typeof STAGE_CONFIG];
+            return (
+              <button
+                key={stage}
+                onClick={() => handleSelect(stage)}
+                className="p-6 border-2 border-gray-200 rounded-lg hover:border-gray-900 transition-all hover:shadow-lg text-left group"
+              >
+                <div className="text-3xl mb-3">{config.icon}</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                  {config.name}
+                </h3>
+                <p className="text-xs text-gray-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  Stage {stage}
+                </p>
+                <div className="mt-3 h-1 w-12 rounded-full" style={{ backgroundColor: config.color }} />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Description */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-sm text-gray-700 leading-relaxed">
+            <strong>진행적 노출 (Progressive Disclosure):</strong> 온보딩 모드에서는 처음 3단계(문제 발굴, 문제 정의, 고객 개발)만 표시됩니다.
+            3개 이상의 노드를 완성하면 모든 7단계가 잠금 해제됩니다.
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            className="flex-1 px-6 py-3 bg-white text-gray-900 font-medium rounded-lg border-2 border-gray-900 hover:bg-gray-50 transition-colors"
           >
-            ✕
+            취소
           </button>
-        </div>
-
-        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          {mode === 'problem-discovery' && '문제 발굴 모드: 3단계 노드 중 하나를 선택하세요'}
-          {mode === 'beginner' && '초보자 모드: 3단계 노드 중 하나를 선택하세요'}
-          {mode === 'team' && '팀 온보딩 모드: 3단계 노드 중 하나를 선택하세요'}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {INITIAL_NODE_TYPES.map((type) => (
-            <button
-              key={type.id}
-              onClick={() => onSelect(type.id)}
-              className="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-indigo-500 dark:hover:border-indigo-400 transition-all hover:scale-105"
-            >
-              <div className="text-4xl mb-2">{type.icon}</div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                {type.label}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{type.description}</p>
-            </button>
-          ))}
         </div>
       </div>
     </div>
   );
 };
+
+export default NodeTypeSelector;

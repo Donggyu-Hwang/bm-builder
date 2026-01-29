@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useNetworkStatus } from './useNetworkStatus';
 
-describe('useNetworkStatus Hook', () => {
+describe('useNetworkStatus', () => {
   const originalNavigator = window.navigator;
 
   beforeEach(() => {
-    // Reset to online before each test
+    // Reset navigator.onLine before each test
     Object.defineProperty(window.navigator, 'onLine', {
       writable: true,
       value: true,
@@ -15,122 +15,61 @@ describe('useNetworkStatus Hook', () => {
 
   afterEach(() => {
     // Restore original navigator
-    Object.defineProperty(window, 'navigator', {
-      value: originalNavigator,
+    Object.defineProperty(window.navigator, 'onLine', {
+      writable: true,
+      value: originalNavigator.onLine,
     });
   });
 
-  describe('Initial State', () => {
-    it('should return online status initially', () => {
-      Object.defineProperty(window.navigator, 'onLine', {
-        writable: true,
-        value: true,
-      });
+  it('returns isOnline: true when online', () => {
+    const { result } = renderHook(() => useNetworkStatus());
 
-      const { result } = renderHook(() => useNetworkStatus());
-
-      expect(result.current.isOnline).toBe(true);
-    });
-
-    it('should return offline status initially if offline', () => {
-      Object.defineProperty(window.navigator, 'onLine', {
-        writable: true,
-        value: false,
-      });
-
-      const { result } = renderHook(() => useNetworkStatus());
-
-      expect(result.current.isOnline).toBe(false);
-    });
+    expect(result.current.isOnline).toBe(true);
+    expect(result.current.isOffline).toBe(false);
   });
 
-  describe('Network Events', () => {
-    it('should update to offline when offline event is fired', () => {
-      const { result } = renderHook(() => useNetworkStatus());
-
-      expect(result.current.isOnline).toBe(true);
-
-      act(() => {
-        Object.defineProperty(window.navigator, 'onLine', {
-          writable: true,
-          value: false,
-        });
-        window.dispatchEvent(new Event('offline'));
-      });
-
-      expect(result.current.isOnline).toBe(false);
+  it('returns isOffline: true when offline', () => {
+    Object.defineProperty(window.navigator, 'onLine', {
+      writable: true,
+      value: false,
     });
 
-    it('should update to online when online event is fired', () => {
-      Object.defineProperty(window.navigator, 'onLine', {
-        writable: true,
-        value: false,
-      });
+    const { result } = renderHook(() => useNetworkStatus());
 
-      const { result } = renderHook(() => useNetworkStatus());
-
-      expect(result.current.isOnline).toBe(false);
-
-      act(() => {
-        Object.defineProperty(window.navigator, 'onLine', {
-          writable: true,
-          value: true,
-        });
-        window.dispatchEvent(new Event('online'));
-      });
-
-      expect(result.current.isOnline).toBe(true);
-    });
+    expect(result.current.isOnline).toBe(false);
+    expect(result.current.isOffline).toBe(true);
   });
 
-  describe('Event Listener Cleanup', () => {
-    it('should remove event listeners on unmount', () => {
-      const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+  it('listens to online and offline events', () => {
+    const { result } = renderHook(() => useNetworkStatus());
 
-      const { unmount } = renderHook(() => useNetworkStatus());
+    expect(result.current.isOnline).toBe(true);
 
-      unmount();
-
-      expect(removeEventListenerSpy).toHaveBeenCalledWith('online', expect.any(Function));
-      expect(removeEventListenerSpy).toHaveBeenCalledWith('offline', expect.any(Function));
+    act(() => {
+      window.dispatchEvent(new Event('offline'));
     });
+
+    expect(result.current.isOnline).toBe(false);
+    expect(result.current.isOffline).toBe(true);
+
+    act(() => {
+      window.dispatchEvent(new Event('online'));
+    });
+
+    expect(result.current.isOnline).toBe(true);
+    expect(result.current.isOffline).toBe(false);
   });
 
-  describe('Multiple Network Changes', () => {
-    it('should handle multiple network state changes', () => {
-      const { result } = renderHook(() => useNetworkStatus());
+  it('cleans up event listeners on unmount', () => {
+    const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
 
-      expect(result.current.isOnline).toBe(true);
+    const { unmount } = renderHook(() => useNetworkStatus());
 
-      // Go offline
-      act(() => {
-        Object.defineProperty(window.navigator, 'onLine', {
-          writable: true,
-          value: false,
-        });
-        window.dispatchEvent(new Event('offline'));
-      });
-      expect(result.current.isOnline).toBe(false);
+    unmount();
 
-      // Go back online
-      act(() => {
-        Object.defineProperty(window.navigator, 'onLine', {
-          writable: true,
-          value: true,
-        });
-        window.dispatchEvent(new Event('online'));
-      });
-      expect(result.current.isOnline).toBe(true);
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('online', expect.any(Function));
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('offline', expect.any(Function));
 
-      // Go offline again
-      act(() => {
-        Object.defineProperty(window.navigator, 'onLine', {
-          writable: true,
-          value: false,
-        });
-        window.dispatchEvent(new Event('offline'));
-      });
-      expect(result.current.isOnline).toBe(false);
-    });
+    removeEventListenerSpy.mockRestore();
   });
 });

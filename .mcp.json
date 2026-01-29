@@ -7,6 +7,17 @@
         "--package=agentvibes",
         "agentvibes-mcp-server"
       ]
+    },
+    "db": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bytebase/dbhub",
+        "--dsn",
+        "postgresql://postgres:Entbe0421*@15.164.103.114:5432/postgres"
+      ],
+      "env": {}
     }
   }
 }

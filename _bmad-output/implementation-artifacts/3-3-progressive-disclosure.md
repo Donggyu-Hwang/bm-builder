@@ -1,6 +1,6 @@
 # Story 3.3: Progressive Disclosure 구현
 
-Status: done
+Status: backlog
 
 ## Story
 

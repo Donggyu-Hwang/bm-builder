@@ -1,6 +1,6 @@
 # Story 5.3: 버전 관리 (최근 10개)
 
-Status: done
+Status: backlog
 
 ## Story
 

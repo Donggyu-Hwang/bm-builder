@@ -15,9 +15,9 @@
 #   - {file-path}: File created/found (e.g., "docs/product-brief.md")
 #   - skipped: Optional/conditional workflow that was skipped
 
-generated: "2026-01-09"
-project: "bm-builder"
-project_type: "bm-builder"
+generated: "2026-01-29"
+project: "bm-builder-leanstartup-canvas"
+project_type: "lean-startup-canvas"
 selected_track: "bmad-method"
 field_type: "greenfield"
 workflow_path: "{project-root}/_bmad/bmm/workflows/workflow-status/paths/method-greenfield.yaml"
@@ -42,17 +42,17 @@ workflow_status:
 
   # Phase 2: Planning (Required)
   - id: "prd"
-    status: "/Users/donggyu/bm-builder/_bmad-output/planning-artifacts/prd.md"
+    status: "/Users/donggyu/bm-builder/_bmad-output/planning-artifacts/prd-leanstartup-canvas-2026-01-26.md"
     phase: 2
     agent: "pm"
     command: "/bmad:bmm:workflows:create-prd"
-    note: "Product Requirements Document with FRs and NFRs - Completed 2026-01-09"
+    note: "린스타트업 캔버스 PRD - 7단계 프레임워크, AI Co-Founder 경험 - Updated 2026-01-26"
   - id: "create-ux-design"
-    status: "conditional"
+    status: "/Users/donggyu/bm-builder/_bmad-output/planning-artifacts/ux-design-specification.md"
     phase: 2
     agent: "ux-designer"
     command: "/bmad:bmm:workflows:create-ux-design"
-    note: "Determined after PRD - user/agent decides if needed"
+    note: "UX Design Spec completed - User journey, UI components, interactions"
 
   # Phase 3: Solutioning (Required)
   - id: "create-architecture"
@@ -60,13 +60,13 @@ workflow_status:
     phase: 3
     agent: "architect"
     command: "/bmad:bmm:workflows:create-architecture"
-    note: "Complete system design for greenfield projects - Completed 2026-01-09"
+    note: "Updated Architecture - Custom Monorepo, JWT Auth, PostgreSQL + pgvector - Updated 2026-01-27"
   - id: "create-epics-and-stories"
-    status: "/Users/donggyu/bm-builder/_bmad-output/planning-artifacts/epics.md"
+    status: "/Users/donggyu/bm-builder/_bmad-output/planning-artifacts/epics-new.md"
     phase: 3
     agent: "pm"
     command: "/bmad:bmm:workflows:create-epics-and-stories"
-    note: "Break down PRD into implementable epics and stories - Completed 2026-01-09: 9 Epics, 52 Stories"
+    note: "린스타트업 캔버스 전용 에픽 - 6 Epics, 19 Stories (7-stage framework) - Updated 2026-01-28"
   - id: "test-design"
     status: "optional"
     phase: 3
@@ -86,4 +86,4 @@ workflow_status:
     phase: 4
     agent: "sm"
     command: "/bmad:bmm:workflows:sprint-planning"
-    note: "Creates sprint plan - subsequent work tracked there"
+    note: "Creates sprint plan - tracked in sprint-status.yaml"

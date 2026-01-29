@@ -51,41 +51,41 @@ so that 원하는 위치에 노드를 배치하여 캔버스를 체계적으로 
 
 ## Tasks / Subtasks
 
-- [ ] **Implement Drag Detection**
-  - [ ] Add mouse/touch event listeners to nodes
-  - [ ] Detect drag start within 100ms (desktop) / 150ms (mobile)
-  - [ ] Set node opacity to 70%
-  - [ ] Show "이동 중..." indicator
-  - [ ] Set z-index to 100 for dragged node
+- [x] **Implement Drag Detection**
+  - [x] Add mouse/touch event listeners to nodes
+  - [x] Detect drag start within 100ms (desktop) / 150ms (mobile)
+  - [x] Set node opacity to 70%
+  - [x] Show "이동 중..." indicator
+  - [x] Set z-index to 100 for dragged node
 
-- [ ] **Implement Drag Movement**
-  - [ ] Track mouse/touch position in real-time
-  - [ ] Update node position using requestAnimationFrame (60fps)
-  - [ ] Ensure drag response latency < 100ms
-  - [ ] Implement canvas boundary constraints
+- [x] **Implement Drag Movement**
+  - [x] Track mouse/touch position in real-time
+  - [x] Update node position using requestAnimationFrame (60fps)
+  - [x] Ensure drag response latency < 100ms
+  - [x] Implement canvas boundary constraints
 
-- [ ] **Implement Drag End Handler**
-  - [ ] Detect mouse up / touch end event
-  - [ ] Restore node opacity to 100%
-  - [ ] Debounce API call by 300ms
-  - [ ] Call PATCH /api/v1/nodes/:id
-  - [ ] Show "저장됨" toast on success
+- [x] **Implement Drag End Handler**
+  - [x] Detect mouse up / touch end event
+  - [x] Restore node opacity to 100%
+  - [x] Debounce API call by 300ms
+  - [x] Call PATCH /api/v1/nodes/:id
+  - [x] Show "저장됨" toast on success
 
-- [ ] **Implement Multi-Select Drag**
-  - [ ] Add Shift+Click selection logic
-  - [ ] Highlight selected nodes
-  - [ ] Calculate relative positions
-  - [ ] Move all selected nodes together
+- [x] **Implement Multi-Select Drag**
+  - [x] Add Shift+Click selection logic
+  - [x] Highlight selected nodes
+  - [x] Calculate relative positions
+  - [x] Move all selected nodes together
 
-- [ ] **Implement Mobile Touch Support**
-  - [ ] Add touch event listeners
-  - [ ] Support pinch-to-zoom gesture
-  - [ ] Disable scroll during drag (e.preventDefault())
-  - [ ] Increase drag start timeout to 150ms
+- [x] **Implement Mobile Touch Support**
+  - [x] Add touch event listeners
+  - [x] Support pinch-to-zoom gesture
+  - [x] Disable scroll during drag (e.preventDefault())
+  - [x] Increase drag start timeout to 150ms
 
-- [ ] **Implement Offline Position Save**
-  - [ ] Save to LocalStorage immediately on drag end
-  - [ ] Queue for sync when online
+- [x] **Implement Offline Position Save**
+  - [x] Save to LocalStorage immediately on drag end
+  - [x] Queue for sync when online
 
 ## Dev Notes
 
@@ -140,6 +140,8 @@ Claude Sonnet 4.5
 
 ### File List
 
-- `/Users/donggyu/bm-builder/frontend/src/components/canvas/Node.tsx`
-- `/Users/donggyu/bm-builder/frontend/src/hooks/useNodeDrag.ts`
-- `/Users/donggyu/bm-builder/frontend/src/services/nodeUpdate.service.ts`
+- `/Users/donggyu/bm-builder/frontend/src/components/onboarding/DraggableNode.tsx` ✨ VS Design Diverge
+- `/Users/donggyu/bm-builder/frontend/src/hooks/useNodeDrag.ts` ✨ Custom drag hook with performance monitoring
+- `/Users/donggyu/bm-builder/frontend/src/hooks/useDragHistory.ts` ✨ Undo/redo support
+- `/Users/donggyu/bm-builder/frontend/src/api/nodesApi.ts` ✨ Backend API integration
+- `/Users/donggyu/bm-builder/frontend/src/components/onboarding/OnboardingCanvas.tsx` (modified)

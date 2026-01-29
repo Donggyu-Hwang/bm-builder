@@ -1,76 +1,26 @@
-/**
- * Progressive Disclosure Configuration for Onboarding
- * Initially shows only Stage 1-3 node types
- */
+// Progressive Disclosure Configuration
+// Initially shows only Stage 1-3 node types for simplified onboarding
+
+import type { ProgressiveDisclosureState } from '../types/canvas';
 
 export const INITIAL_UNLOCKED_STAGES = [1, 2, 3];
 
-export const PROGRESSIVE_DISCLOSURE_CONFIG = {
-  // Node types shown in each stage
-  stage1: ['idea', 'problem', 'solution'],
-  stage2: ['customer-segment', 'value-proposition', 'channel'],
-  stage3: ['revenue-stream', 'cost-structure', 'key-metrics'],
-  stage4: ['partners', 'activities', 'resources'],
-  stage5: ['relationships', 'distribution', 'validation'],
-  stage6: ['competition', 'advantage', 'growth'],
-  stage7: ['pivot', 'scale', 'exit'],
-
-  // Minimum nodes to create before unlocking next stage
-  nodesToUnlockStage2: 3,
-  nodesToUnlockStage3: 5,
-  nodesToUnlockStage4: 7,
-  nodesToUnlockStage5: 10,
-  nodesToUnlockStage6: 15,
-  nodesToUnlockStage7: 20,
+export const STAGE_CONFIG = {
+  1: { name: '문제 발굴', icon: '🔍', color: '#ef4444' },
+  2: { name: '문제 정의', icon: '🎯', color: '#f97316' },
+  3: { name: '고객 개발', icon: '👥', color: '#b45309' }, // Amber-700 (WCAG compliant)
+  4: { name: '시장 개발', icon: '📈', color: '#22c55e' },
+  5: { name: '솔루션', icon: '💡', color: '#3b82f6' },
+  6: { name: '비즈니스 모델', icon: '📊', color: '#6366f1' },
+  7: { name: 'IR 자료', icon: '📄', color: '#a855f7' },
 };
 
-export const getAvailableNodeTypes = (unlockedStages: number[]): string[] => {
-  const nodeTypes: string[] = [];
+export const getInitialProgressiveState = (): ProgressiveDisclosureState => ({
+  unlockedStages: INITIAL_UNLOCKED_STAGES,
+  showAll: false,
+});
 
-  unlockedStages.forEach((stage) => {
-    switch (stage) {
-      case 1:
-        nodeTypes.push(...PROGRESSIVE_DISCLOSURE_CONFIG.stage1);
-        break;
-      case 2:
-        nodeTypes.push(...PROGRESSIVE_DISCLOSURE_CONFIG.stage2);
-        break;
-      case 3:
-        nodeTypes.push(...PROGRESSIVE_DISCLOSURE_CONFIG.stage3);
-        break;
-      case 4:
-        nodeTypes.push(...PROGRESSIVE_DISCLOSURE_CONFIG.stage4);
-        break;
-      case 5:
-        nodeTypes.push(...PROGRESSIVE_DISCLOSURE_CONFIG.stage5);
-        break;
-      case 6:
-        nodeTypes.push(...PROGRESSIVE_DISCLOSURE_CONFIG.stage6);
-        break;
-      case 7:
-        nodeTypes.push(...PROGRESSIVE_DISCLOSURE_CONFIG.stage7);
-        break;
-    }
-  });
-
-  return [...new Set(nodeTypes)]; // Remove duplicates
-};
-
-export const shouldUnlockNextStage = (currentStage: number, nodeCount: number): boolean => {
-  switch (currentStage) {
-    case 1:
-      return nodeCount >= PROGRESSIVE_DISCLOSURE_CONFIG.nodesToUnlockStage2;
-    case 2:
-      return nodeCount >= PROGRESSIVE_DISCLOSURE_CONFIG.nodesToUnlockStage3;
-    case 3:
-      return nodeCount >= PROGRESSIVE_DISCLOSURE_CONFIG.nodesToUnlockStage4;
-    case 4:
-      return nodeCount >= PROGRESSIVE_DISCLOSURE_CONFIG.nodesToUnlockStage5;
-    case 5:
-      return nodeCount >= PROGRESSIVE_DISCLOSURE_CONFIG.nodesToUnlockStage6;
-    case 6:
-      return nodeCount >= PROGRESSIVE_DISCLOSURE_CONFIG.nodesToUnlockStage7;
-    default:
-      return false;
-  }
-};
+export const unlockAllStages = (): ProgressiveDisclosureState => ({
+  unlockedStages: [1, 2, 3, 4, 5, 6, 7],
+  showAll: true,
+});

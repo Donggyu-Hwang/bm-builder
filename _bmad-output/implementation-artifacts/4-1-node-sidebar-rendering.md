@@ -1,6 +1,6 @@
 # Story 4.1: 노드 사이드바 렌더링
 
-Status: done
+Status: backlog
 
 ## Story
 

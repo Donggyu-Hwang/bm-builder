@@ -1,6 +1,6 @@
 # Story 4.3: AI 제안 승인/거부 기능
 
-Status: done
+Status: backlog
 
 ## Story
 

@@ -16,3 +16,5 @@ coverage/
 *.swo
 node_modules/
 .env
+# AWS credentials (NEVER commit)
+backend/.env
